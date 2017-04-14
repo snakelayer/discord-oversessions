@@ -5,23 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/hashicorp/golang-lru"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
+
+	"github.com/Sirupsen/logrus"
 )
 
 const (
 	// The base url of the owapi
 	apiBaseUrl = "https://owapi.net/api/v3/"
-
-	// The number of user stats entries to cache
-	cacheSizeStats = 200
-
-	// Time before user stats is considered stale and should be re-fetched
-	cacheDurationStats = 5 * time.Minute
 )
 
 // Top level response to a u/<battle-tag>/stats request
@@ -40,7 +33,7 @@ type regionStats struct {
 
 type UserStats struct {
 	BattleTag string
-	Region string
+	Region    string
 
 	OverallStats struct {
 		CompRank int `json:"comprank"`
@@ -64,11 +57,6 @@ type UserStats struct {
 	} `json:"game_stats"`
 }
 
-type userStatsCacheEntry struct {
-	*UserStats
-	addedAt time.Time
-}
-
 // ErrorResponse is an error that is populated with additional error
 // data for the failed request.
 // TODO: do we get any extra data on error?
@@ -85,8 +73,6 @@ type OverwatchClient struct {
 	logger *logrus.Entry
 	client *http.Client
 
-	userStatsCache *lru.ARCCache
-
 	baseUrl *url.URL
 
 	// Channel of request "tokens". A token must be obtained before
@@ -99,11 +85,6 @@ type OverwatchClient struct {
 // Creates a new OverwatchClient, a rest client for querying a third party
 // overwatch api.
 func NewOverwatchClient(logger *logrus.Logger) (*OverwatchClient, error) {
-	userStatsCache, err := lru.NewARC(cacheSizeStats)
-	if err != nil {
-		return nil, err
-	}
-
 	// Store the logger as an Entry, adding the module to all log calls
 	overwatchLogger := logger.WithField("module", "overwatch")
 	client := http.DefaultClient
@@ -115,11 +96,10 @@ func NewOverwatchClient(logger *logrus.Logger) (*OverwatchClient, error) {
 	nextCh <- true
 
 	return &OverwatchClient{
-		logger:         overwatchLogger,
-		client:         client,
-		userStatsCache: userStatsCache,
-		baseUrl:        baseUrl,
-		nextCh:         nextCh,
+		logger:  overwatchLogger,
+		client:  client,
+		baseUrl: baseUrl,
+		nextCh:  nextCh,
 	}, nil
 }
 
@@ -193,12 +173,6 @@ func (ow *OverwatchClient) GetStats(ctx context.Context, battleTag string) (*Use
 	// Url friendly battleTag
 	battleTag = strings.Replace(battleTag, "#", "-", -1)
 
-	// Try get from cache, before trying to send a request, so that we can
-	// return directly if we have a cached requests
-	if userStats, ok := ow.getUserStatsFromCache(battleTag); ok {
-		return userStats, nil
-	}
-
 	// We wait here until either we can obtain a "request token" from nextCh,
 	// or our context is canceled.
 	select {
@@ -208,12 +182,6 @@ func (ow *OverwatchClient) GetStats(ctx context.Context, battleTag string) (*Use
 		defer func() {
 			ow.nextCh <- true
 		}()
-	}
-
-	// We check cache again after obtaining the token, as we might
-	// have slept during another request for the same battleTag
-	if userStats, ok := ow.getUserStatsFromCache(battleTag); ok {
-		return userStats, nil
 	}
 
 	path := fmt.Sprintf("u/%s/stats", battleTag)
@@ -240,22 +208,7 @@ func (ow *OverwatchClient) GetStats(ctx context.Context, battleTag string) (*Use
 	userStats.BattleTag = battleTag
 	userStats.Region = regionName
 
-	// Store to cache
-	cacheEntry := userStatsCacheEntry{userStats, time.Now()}
-	ow.userStatsCache.Add(battleTag, cacheEntry)
-
 	return userStats, nil
-}
-
-// Returns a cached UserStats entry, if one exist and the data is not considered stale
-func (ow *OverwatchClient) getUserStatsFromCache(battleTag string) (*UserStats, bool) {
-	if cacheEntry, ok := ow.userStatsCache.Get(battleTag); ok {
-		userStatsCacheEntry := cacheEntry.(userStatsCacheEntry)
-		if time.Since(userStatsCacheEntry.addedAt) <= cacheDurationStats {
-			return userStatsCacheEntry.UserStats, true
-		}
-	}
-	return nil, false
 }
 
 // Takes a stats response and returns the "best matching" region.
@@ -263,7 +216,7 @@ func (ow *OverwatchClient) getUserStatsFromCache(battleTag string) (*UserStats, 
 // return nil if all regions are nil.
 func (ow *OverwatchClient) getBestRegion(res *statsResponse) (*regionStats, string) {
 	type region struct {
-		name string
+		name  string
 		stats *regionStats
 	}
 	regions := []region{

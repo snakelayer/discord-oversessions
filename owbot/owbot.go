@@ -1,47 +1,30 @@
 package owbot
 
 import (
-	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/boltdb/bolt"
-	"github.com/verath/owbot-bot/owbot/discord"
-	"github.com/verath/owbot-bot/owbot/overwatch"
-)
-
-var (
-	// The url to the project github page
-	GitHubUrl = "https://github.com/verath/owbot-bot"
-
-	// The git revision currently running. This value is set during the build
-	// using '-ldflags "-X github.com/verath/owbot-bot/owbot.GitRevision=..."'
-	GitRevision = ""
+	"github.com/snakelayer/discord-oversessions/owbot/discord"
+	"github.com/snakelayer/discord-oversessions/owbot/overwatch"
+	"github.com/snakelayer/discord-oversessions/owbot/player"
 )
 
 // The bot is the main component of the ow-bot. It handles events
 // from Discord and uses the overwatch client to respond to queries.
 type Bot struct {
-	logger     *logrus.Entry
-	overwatch  *overwatch.OverwatchClient
-	discord    *discord.DiscordClient
-	userSource UserSource
+	logger       *logrus.Entry
+	overwatch    *overwatch.OverwatchClient
+	discord      *discord.DiscordAdapter
+	playerStates map[string]player.PlayerState
 }
 
-func (bot *Bot) onSessionReady() {
-	bot.logger.Info("onSessionReady, setting status message")
-	bot.discord.UpdateStatus(-1, "!ow help")
-}
-
-// Starts the bot, connects to Discord and starts listening for events
 func (bot *Bot) Start() error {
 	// TODO: Check that we are not started
 
-	bot.logger.WithField("revision", GitRevision).Info("Bot starting, connecting...")
+	bot.discord.AddHandler(bot.readyHandler)
+	bot.discord.AddHandler(bot.presenceUpdate)
 
-	bot.discord.AddReadyHandler(bot.onSessionReady)
-	bot.discord.AddMessageHandler(bot.onChannelMessage)
-
+	bot.logger.Info("Bot starting, connecting...")
 	if err := bot.discord.Connect(); err != nil {
-		bot.logger.WithField("error", err).Error("Could not connect to Discord")
+		bot.logger.WithField("error", err).Error("discordsession could not connect")
 		return err
 	}
 	bot.logger.Debug("Connected to Discord")
@@ -49,56 +32,33 @@ func (bot *Bot) Start() error {
 	return nil
 }
 
-// Stops the bot, disconnecting from Discord
-func (bot *Bot) Stop() error {
-	// TODO: Check that we are started
-
-	bot.logger.Info("Bot stopping, disconnecting...")
-	if err := bot.discord.Disconnect(); err != nil {
-		bot.logger.WithField("error", err).Error("Failed to disconnect from Discord")
-		return err
-	}
-	bot.logger.Info("Disconnected from Discord")
-
-	// TODO: Remove added handlers
-
-	return nil
+func (bot *Bot) Stop() {
+	bot.discord.Close()
+	bot.logger.Debug("Disconnected from Discord")
 }
 
-// Creates a new bot.
-func NewBot(logger *logrus.Logger, db *bolt.DB, botId string, token string) (*Bot, error) {
+func NewBot(logger *logrus.Logger, token string, battleTagMap map[string]string) (*Bot, error) {
 	overwatch, err := overwatch.NewOverwatchClient(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	userAgent := fmt.Sprintf("DiscordBot (%s, %s)", GitHubUrl, GitRevision)
-	discord, err := discord.NewDiscord(logger, botId, token, userAgent)
+	discordAdapter, err := discord.New(logger, token)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store the logger as an Entry, adding the module to all log calls
-	botLogger := logger.WithField("module", "main")
-
-	// If we have a bolt database, use the BoltUserSource. Else fallback
-	// to an in memory user source
-	var userSource UserSource
-	if db == nil {
-		botLogger.Info("No db provided, using in-memory user source")
-		userSource = NewMemoryUserSource()
-	} else {
-		botLogger.Info("Using Bolt db user source")
-		userSource, err = NewBoltUserSource(logger, db)
-		if err != nil {
-			return nil, err
-		}
+	var playerStates = make(map[string]player.PlayerState)
+	for userId, battleTag := range battleTagMap {
+		playerState := player.PlayerState{BattleTag: battleTag}
+		playerStates[userId] = playerState
+		logger.WithField("userId", userId).WithField("battleTag", battleTag).Debug("initialized player state")
 	}
 
 	return &Bot{
-		logger:     botLogger,
-		discord:    discord,
-		overwatch:  overwatch,
-		userSource: userSource,
+		logger:       logger.WithField("module", "main"),
+		overwatch:    overwatch,
+		discord:      discordAdapter,
+		playerStates: playerStates,
 	}, nil
 }

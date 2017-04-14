@@ -2,76 +2,59 @@ package main
 
 import (
 	"flag"
-	"github.com/Sirupsen/logrus"
-	"github.com/boltdb/bolt"
-	"github.com/verath/owbot-bot/owbot"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/snakelayer/discord-oversessions/owbot"
 )
 
 func main() {
 	var (
-		botId   string
-		token   string
-		logFile string
-		dbFile  string
-		debug   bool
+		token         string
+		battleTagFile string
+		dbFile        string
+		debug         bool
 	)
-	flag.StringVar(&botId, "id", "", "The Bot ID of the bot")
-	flag.StringVar(&token, "token", "", "The secret token for the bot")
-	flag.StringVar(&logFile, "logfile", "", "A path to a file for writing logs (default is stdout)")
+	flag.StringVar(&token, "token", "", "The 	secret token for the bot")
+	flag.StringVar(&battleTagFile, "battleTags", "", "A file mapping discord userIds to battleTags. One entry per line. Space delimited.")
 	flag.StringVar(&dbFile, "dbfile", "", "A path to a file to be used for bolt database")
 	flag.BoolVar(&debug, "debug", false, "Set to true to log debug messages")
 	flag.Parse()
 
 	// TODO: This is not a great solution for required config...
-	if botId == "" || token == "" {
-		println("Both Bot ID and Bot Token is required")
+	if token == "" {
+		println("Bot token is required")
 		os.Exit(-1)
 	}
 
-	// Create a logrus instance (logger)
 	logger := logrus.New()
-	if logFile != "" {
-		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"module":   "main",
-				"filename": logFile,
-				"error":    err,
-			}).Fatal("Could not open file for logging")
-		}
-		logger.Formatter = &logrus.TextFormatter{ForceColors: true}
-		logger.Out = f
-	}
-
-	// If debug is true, log debug messages
 	if debug {
 		logger.Level = logrus.DebugLevel
 	}
 
-	// Create a Bolt instance (database)
-	var db *bolt.DB
-	var err error
-	if dbFile != "" {
-		// Create the Bolt db
-		db, err = bolt.Open(dbFile, 0600, &bolt.Options{Timeout: 5 * time.Second})
-		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"module":   "main",
-				"filename": dbFile,
-				"error":    err,
-			}).Fatal("Could not open file as bolt database")
-		}
-		defer func() {
-			if err := db.Close(); err != nil {
-				logger.WithField("error", err).Fatal("Could not close bolt db")
-			}
-		}()
+	// reference time: Mon Jan 2 15:04:05 -0700 MST 2006
+	logFileName := time.Now().Format("oversessions.log.2006-01-02-15-04-05")
+	logFileName = strings.Replace(logFileName, " ", "_", -1)
+	logFileName = strings.Replace(logFileName, ":", "", -1)
+	logFile, err := os.OpenFile(logFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"module":   "main",
+			"filename": logFileName,
+			"error":    err,
+		}).Fatal("Could not open file for logging")
 	}
+	defer logFile.Close()
+	logger.Formatter = &logrus.TextFormatter{ForceColors: true}
+	logger.Out = logFile
 
-	bot, err := owbot.NewBot(logger, db, botId, token)
+	var battleTagMap = getBattleTagMapFromFile(logger, battleTagFile)
+
+	bot, err := owbot.NewBot(logger, token, battleTagMap)
 	if err != nil {
 		logger.WithFields(logrus.Fields{"module": "main", "error": err}).Error("Could not creating bot")
 		return
@@ -87,8 +70,33 @@ func main() {
 	signal.Notify(interruptChan, os.Interrupt, os.Kill)
 	<-interruptChan
 
-	if err := bot.Stop(); err != nil {
-		logger.WithFields(logrus.Fields{"module": "main", "error": err}).Error("Could not stop bot")
-		return
+	bot.Stop()
+}
+
+func getBattleTagMapFromFile(logger *logrus.Logger, file string) map[string]string {
+	var battleTagMap = make(map[string]string)
+
+	if file == "" {
+		return battleTagMap
 	}
+
+	battleTagData, err := ioutil.ReadFile(file)
+	if err != nil {
+		logger.WithField("file name", file).Fatal("could not read battleTag file")
+	}
+
+	entries := strings.Split(string(battleTagData), "\n")
+	for _, entry := range entries {
+		pair := strings.Split(entry, " ")
+		if len(pair) != 2 {
+			logger.WithField("entry", entry).Error("invalid battleTag entry")
+			continue
+		}
+
+		userId := pair[0]
+		battleTag := pair[1]
+		battleTagMap[userId] = battleTag
+	}
+
+	return battleTagMap
 }

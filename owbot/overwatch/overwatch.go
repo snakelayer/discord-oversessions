@@ -36,13 +36,13 @@ type UserStats struct {
 	Region    string
 
 	OverallStats struct {
-		CompRank int `json:"comprank"`
-		Games    int `json:"games"`
-		Level    int `json:"level"`
-		Losses   int `json:"losses"`
-		Prestige int `json:"prestige"`
-		Wins     int `json:"wins"`
-		WinRate  int `json:"win_Rate"`
+		CompRank int     `json:"comprank"`
+		Games    int     `json:"games"`
+		Level    int     `json:"level"`
+		Losses   int     `json:"losses"`
+		Prestige int     `json:"prestige"`
+		Wins     int     `json:"wins"`
+		WinRate  float32 `json:"win_Rate"`
 	} `json:"overall_stats"`
 	GameStats struct {
 		Deaths       float32 `json:"deaths"`

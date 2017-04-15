@@ -135,7 +135,7 @@ func (discordAdapter *DiscordAdapter) IsOverwatch(game *discordgo.Game) bool {
 		return false
 	}
 
-	if game.Name == "overwatch" {
+	if game.Name == "Overwatch" {
 		return true
 	}
 

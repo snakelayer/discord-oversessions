@@ -87,6 +87,10 @@ func getBattleTagMapFromFile(logger *logrus.Logger, file string) map[string]stri
 
 	entries := strings.Split(string(battleTagData), "\n")
 	for _, entry := range entries {
+		if len(entry) <= 0 {
+			continue
+		}
+
 		pair := strings.Split(entry, " ")
 		if len(pair) != 2 {
 			logger.WithField("entry", entry).Error("invalid battleTag entry")

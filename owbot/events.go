@@ -65,11 +65,14 @@ func (bot *Bot) readyHandler(session *discordgo.Session, ready *discordgo.Ready)
 	//session.UpdateStatus(0, "!help")
 
 	bot.discord.SetGuildAndOverwatchChannel()
-	bot.discord.SetPlayerPresences(bot.playerStates)
+	bot.discord.SetPlayerStates(bot.playerStates)
 	bot.setActivePlayerStats(bot.playerStates)
 }
 
 func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *discordgo.PresenceUpdate) {
+	if presenceUpdate.Game != nil && !bot.discord.IsOverwatch(presenceUpdate.Game) {
+		return
+	}
 	userId := presenceUpdate.User.ID
 	prevPlayerState := bot.playerStates[userId]
 
@@ -100,7 +103,12 @@ func (bot *Bot) getPlayerStats(ctx context.Context, playerState *player.PlayerSt
 
 func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState) {
 	for userId, playerState := range playerStates {
-		if playerState.Game != nil {
+		if playerState.BattleTag == "" {
+			bot.logger.WithField("userId", userId).Warn("can't get player stats without a battleTag")
+			continue
+		}
+
+		if bot.discord.IsOverwatch(playerState.Game) {
 			bot.logger.WithField("userId", userId).Debug("initializing player stats")
 			ctx, _ := context.WithTimeout(context.Background(), commandTimeout)
 			bot.getPlayerStats(ctx, &playerState)
@@ -165,18 +173,6 @@ func startedPlaying(prev player.PlayerState, next player.PlayerState) bool {
 
 func stoppedPlaying(prev player.PlayerState, next player.PlayerState) bool {
 	if prev.Game != nil && next.Game == nil {
-		return true
-	}
-
-	return false
-}
-
-func isPlayingOverwatch(game *discordgo.Game) bool {
-	if game == nil {
-		return false
-	}
-
-	if game.Name == "overwatch" {
 		return true
 	}
 

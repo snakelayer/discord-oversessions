@@ -38,7 +38,7 @@ func (discordAdapter *DiscordAdapter) AddHandler(handler interface{}) {
 	discordAdapter.session.AddHandler(handler)
 }
 
-func (discordAdapter *DiscordAdapter) SetPlayerPresences(playerStates map[string]player.PlayerState) {
+func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]player.PlayerState) {
 	guild, err := discordAdapter.session.Guild(discordAdapter.guild.ID)
 	if err != nil {
 		discordAdapter.logger.WithField("guildId", discordAdapter.guild.ID).Error("no guild found")
@@ -48,9 +48,15 @@ func (discordAdapter *DiscordAdapter) SetPlayerPresences(playerStates map[string
 		userId := presence.User.ID
 
 		playerState := playerStates[userId]
-
-		playerState.Game = presence.Game
 		discordAdapter.setUser(userId, &playerState)
+		if playerState.User.Bot {
+			delete(playerStates, userId)
+			continue
+		}
+
+		if discordAdapter.IsOverwatch(presence.Game) {
+			playerState.Game = presence.Game
+		}
 
 		playerStates[userId] = playerState
 	}
@@ -122,6 +128,18 @@ func (discordAdapter *DiscordAdapter) UpdateMessage(messageId string, content st
 	}
 
 	return discordAdapter.session.ChannelMessageEdit(discordAdapter.channel.ID, messageId, content)
+}
+
+func (discordAdapter *DiscordAdapter) IsOverwatch(game *discordgo.Game) bool {
+	if game == nil {
+		return false
+	}
+
+	if game.Name == "overwatch" {
+		return true
+	}
+
+	return false
 }
 
 func (discordAdapter *DiscordAdapter) Close() {

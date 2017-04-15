@@ -26,10 +26,15 @@ type playerSessionData struct {
 	Username string
 	FinalSR  int
 	SRDiff   int
+
+	Hours   int
+	Minutes int
 }
 
-var templateUpdatedMessage = template.Must(template.New("UpdatedMessage").Parse(strings.TrimSpace(`
-**{{ .Username }}**: SR {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }})
+var templateDiffMessage = template.Must(template.New("DiffMessage").Parse(strings.TrimSpace(`
+**{{ .Username }}**:
+SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }})
+length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
 `)))
 
 var templateNoChangeMessage = template.Must(template.New("NoChangeMessage").Parse(strings.TrimSpace(`
@@ -135,7 +140,6 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 	var messageContent string
 	if prev.UserStats == nil && next.UserStats == nil {
 		bot.logger.Warn("no user stats found")
-		messageContent = bot.getTemplateMessage(templateErrorMessage, prev)
 	} else if prev.UserStats == nil && next.UserStats != nil {
 		bot.logger.Warn("no previous user stats found")
 		messageContent = bot.getTemplateMessage(templateNoChangeMessage, next)
@@ -143,9 +147,16 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 		bot.logger.Warn("no next user stats found")
 		messageContent = bot.getTemplateMessage(templateNoChangeMessage, prev)
 	} else if isStatsDifferent(prev.UserStats, next.UserStats) {
-		messageContent = bot.getTemplateMessage(templateUpdatedMessage, playerSessionData{Username: next.User.Username,
-			FinalSR: next.UserStats.OverallStats.CompRank,
-			SRDiff:  next.UserStats.OverallStats.CompRank - prev.UserStats.OverallStats.CompRank})
+		hours, minutes := getHoursMinutesFromDuration(next.Timestamp.Sub(prev.Timestamp))
+		bot.logger.WithField("hours", hours).WithField("minutes", minutes).Debug("session duration")
+
+		messageContent = bot.getTemplateMessage(templateDiffMessage, playerSessionData{
+			Username: next.User.Username,
+			FinalSR:  next.UserStats.OverallStats.CompRank,
+			SRDiff:   next.UserStats.OverallStats.CompRank - prev.UserStats.OverallStats.CompRank,
+			Hours:    hours,
+			Minutes:  minutes,
+		})
 	} else {
 		// do nothing when there is no change
 	}
@@ -177,4 +188,13 @@ func isStatsDifferent(prev *overwatch.UserStats, next *overwatch.UserStats) bool
 	}
 
 	return true
+}
+
+func getHoursMinutesFromDuration(duration time.Duration) (int, int) {
+	var hours, minutes int
+	minutes = int(duration.Minutes())
+	hours = minutes / 60
+	minutes -= hours * 60
+
+	return hours, minutes
 }

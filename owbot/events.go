@@ -22,10 +22,6 @@ const (
 	maxGetUserStatsAttempts = 10
 )
 
-var templateInitialMessage = template.Must(template.New("InitialMessage").Parse(strings.TrimSpace(`
-**{{ .Username }}**: SR *(pending...)*
-`)))
-
 type playerSessionData struct {
 	Username string
 	FinalSR  int
@@ -118,12 +114,6 @@ func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState)
 }
 
 func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.PlayerState) {
-	initialMessage := bot.getTemplateMessage(templateInitialMessage, next.User)
-	messageResult, err := bot.discord.CreateMessage(initialMessage)
-	if err != nil {
-		bot.logger.Error("failed to send message")
-		return
-	}
 
 	// unfortunately, owapi only updates after a player has closed overwatch,
 	// and sometimes it takes several minutes before changes are visible
@@ -142,25 +132,27 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 		time.Sleep(1 * time.Minute)
 	}
 
-	var lastMessage string
+	var messageContent string
 	if prev.UserStats == nil && next.UserStats == nil {
 		bot.logger.Warn("no user stats found")
-		lastMessage = bot.getTemplateMessage(templateErrorMessage, prev)
+		messageContent = bot.getTemplateMessage(templateErrorMessage, prev)
 	} else if prev.UserStats == nil && next.UserStats != nil {
 		bot.logger.Warn("no previous user stats found")
-		lastMessage = bot.getTemplateMessage(templateNoChangeMessage, next)
+		messageContent = bot.getTemplateMessage(templateNoChangeMessage, next)
 	} else if prev.UserStats != nil && next.UserStats == nil {
 		bot.logger.Warn("no next user stats found")
-		lastMessage = bot.getTemplateMessage(templateNoChangeMessage, prev)
+		messageContent = bot.getTemplateMessage(templateNoChangeMessage, prev)
 	} else if isStatsDifferent(prev.UserStats, next.UserStats) {
-		lastMessage = bot.getTemplateMessage(templateUpdatedMessage, playerSessionData{Username: next.User.Username,
+		messageContent = bot.getTemplateMessage(templateUpdatedMessage, playerSessionData{Username: next.User.Username,
 			FinalSR: next.UserStats.OverallStats.CompRank,
 			SRDiff:  next.UserStats.OverallStats.CompRank - prev.UserStats.OverallStats.CompRank})
 	} else {
-		lastMessage = bot.getTemplateMessage(templateNoChangeMessage, next)
+		// do nothing when there is no change
 	}
 
-	bot.discord.UpdateMessage(messageResult.ID, lastMessage)
+	if messageContent != "" {
+		bot.discord.CreateMessage(messageContent)
+	}
 }
 
 func startedPlaying(prev player.PlayerState, next player.PlayerState) bool {

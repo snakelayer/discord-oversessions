@@ -3,6 +3,7 @@ package discord
 import (
 	"errors"
 	"regexp"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/bwmarrin/discordgo"
@@ -55,6 +56,7 @@ func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]pl
 		}
 
 		if discordAdapter.IsOverwatch(presence.Game) {
+			playerState.Timestamp = time.Now()
 			playerState.Game = presence.Game
 		}
 

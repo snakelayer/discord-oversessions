@@ -13,6 +13,7 @@ package discordgo
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -281,6 +282,10 @@ type Game struct {
 	URL  string `json:"url"`
 }
 
+func (game Game) String() string {
+	return fmt.Sprintf("{Name:%v Type:%v URL:%v}", game.Name, game.Type, game.URL)
+}
+
 // UnmarshalJSON unmarshals json to Game struct
 func (g *Game) UnmarshalJSON(bytes []byte) error {
 	temp := &struct {
@@ -335,6 +340,10 @@ type User struct {
 	Verified      bool   `json:"verified"`
 	MFAEnabled    bool   `json:"mfa_enabled"`
 	Bot           bool   `json:"bot"`
+}
+
+func (user User) String() string {
+	return fmt.Sprintf("{ID:%v Username:%v}", user.ID, user.Username)
 }
 
 // A Settings stores data for a specific users Discord client settings.

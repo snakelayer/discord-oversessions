@@ -71,6 +71,7 @@ func (bot *Bot) readyHandler(session *discordgo.Session, ready *discordgo.Ready)
 }
 
 func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *discordgo.PresenceUpdate) {
+	bot.logger.WithField("presenceUpdate", presenceUpdate).Debug("start handling presenceUpdate")
 	if presenceUpdate.Game != nil && !bot.discord.IsOverwatch(presenceUpdate.Game) {
 		return
 	}

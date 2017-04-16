@@ -57,6 +57,10 @@ type UserStats struct {
 	} `json:"game_stats"`
 }
 
+func (userStats UserStats) String() string {
+	return fmt.Sprintf("{BattleTag:%v OverallStats:%v}", userStats.BattleTag, userStats.OverallStats)
+}
+
 // ErrorResponse is an error that is populated with additional error
 // data for the failed request.
 // TODO: do we get any extra data on error?

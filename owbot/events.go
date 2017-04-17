@@ -17,10 +17,36 @@ import (
 
 const (
 	// Longest amount of time a command is processed until given up on
-	commandTimeout = 5 * time.Second
+	commandTimeout = 10 * time.Second
 
 	maxGetUserStatsAttempts = 10
 )
+
+var HeroEmojiMap = map[string]string{
+	"ana":        "ana",
+	"bastion":    "bastion",
+	"dva":        "dva",
+	"genji":      "genji",
+	"hanzo":      "hanzo",
+	"junkrat":    "junkrat",
+	"lucio":      "lucio",
+	"mccree":     "mccree",
+	"mei":        "mei",
+	"mercy":      "mercy",
+	"orisa":      "orisa",
+	"pharah":     "pharah",
+	"reaper":     "reaper",
+	"reinhardt":  "reinhardt",
+	"roadhog":    "roadhog",
+	"soldier76":  "soldier76",
+	"symmetra":   "symmetra",
+	"torbjorn":   "torbjorn",
+	"tracer":     "tracer",
+	"widowmaker": "widowmaker",
+	"winston":    "winston",
+	"zarya":      "zarya",
+	"zenyatta":   "zenyatta",
+}
 
 type playerSessionData struct {
 	Username string
@@ -29,12 +55,59 @@ type playerSessionData struct {
 
 	Hours   int
 	Minutes int
+
+	HeroesWDL map[string]WDL
+}
+
+type WDL struct {
+	Win  int
+	Draw int
+	Loss int
+}
+
+func (sessionData playerSessionData) WinString() string {
+	var buffer bytes.Buffer
+
+	for hero, wdl := range sessionData.HeroesWDL {
+		for i := 0; i < wdl.Win; i++ {
+			buffer.WriteString(HeroEmojiMap[hero])
+		}
+	}
+
+	return buffer.String()
+}
+
+func (sessionData playerSessionData) DrawString() string {
+	var buffer bytes.Buffer
+
+	for hero, wdl := range sessionData.HeroesWDL {
+		for i := 0; i < wdl.Draw; i++ {
+			buffer.WriteString(HeroEmojiMap[hero])
+		}
+	}
+
+	return buffer.String()
+}
+
+func (sessionData playerSessionData) LossString() string {
+	var buffer bytes.Buffer
+
+	for hero, wdl := range sessionData.HeroesWDL {
+		for i := 0; i < wdl.Loss; i++ {
+			buffer.WriteString(HeroEmojiMap[hero])
+		}
+	}
+
+	return buffer.String()
 }
 
 var templateDiffMessage = template.Must(template.New("DiffMessage").Parse(strings.TrimSpace(`
 **{{ .Username }}**:
-SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }})
 length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
+wins: {{.WinString}}
+draws: {{.DrawString}}
+losses: {{.LossString}}
+SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }})
 `)))
 
 var templateNoChangeMessage = template.Must(template.New("NoChangeMessage").Parse(strings.TrimSpace(`
@@ -149,7 +222,7 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 		bot.getOverwatchDataWithDelay(ctx, next)
 
 		if isStatsDifferent(prev.AllHeroStats, next.AllHeroStats) {
-			bot.logger.Debug("successfully retrieved user stats")
+			bot.logger.Debug("successfully retrieved updated stats")
 			break
 		}
 
@@ -168,11 +241,12 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 	} else if isStatsDifferent(prev.AllHeroStats, next.AllHeroStats) {
 		hours, minutes := getHoursMinutesFromDuration(next.Timestamp.Sub(prev.Timestamp))
 		playerSessionData := playerSessionData{
-			Username: next.User.Username,
-			FinalSR:  next.UserStats.OverallStats.CompRank,
-			SRDiff:   next.UserStats.OverallStats.CompRank - prev.UserStats.OverallStats.CompRank,
-			Hours:    hours,
-			Minutes:  minutes,
+			Username:  next.User.Username,
+			FinalSR:   next.UserStats.OverallStats.CompRank,
+			SRDiff:    next.UserStats.OverallStats.CompRank - prev.UserStats.OverallStats.CompRank,
+			Hours:     hours,
+			Minutes:   minutes,
+			HeroesWDL: bot.getHeroesWDL(prev.AllHeroStats, next.AllHeroStats),
 		}
 		messageContent = bot.getTemplateMessage(templateDiffMessage, playerSessionData)
 
@@ -183,6 +257,152 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 
 	if messageContent != "" {
 		bot.discord.CreateMessage(messageContent)
+	}
+}
+
+func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHeroStats) map[string]WDL {
+	heroesWDL := make(map[string]WDL)
+
+	emptyHeroStruct := overwatch.HeroStruct{}
+	emptyHeroStruct.GeneralStats.GamesLost = 0
+	emptyHeroStruct.GeneralStats.GamesPlayed = 0
+	emptyHeroStruct.GeneralStats.GamesWon = 0
+
+	if next.Ana != nil {
+		if prev.Ana != nil {
+			heroesWDL["ana"] = makeWDL(prev.Ana, next.Ana)
+		} else {
+			heroesWDL["ana"] = makeWDL(&emptyHeroStruct, next.Ana)
+		}
+	}
+	if next.Bastion != nil {
+		if prev.Bastion != nil {
+			heroesWDL["bastion"] = makeWDL(prev.Bastion, next.Bastion)
+		} else {
+			heroesWDL["bastion"] = makeWDL(&emptyHeroStruct, next.Bastion)
+		}
+	}
+	if next.Dva != nil {
+		if prev.Dva != nil {
+			heroesWDL["dva"] = makeWDL(prev.Dva, next.Dva)
+		} else {
+			heroesWDL["dva"] = makeWDL(&emptyHeroStruct, next.Dva)
+		}
+	}
+	if next.Junkrat != nil {
+		if prev.Junkrat != nil {
+			heroesWDL["junkrat"] = makeWDL(prev.Junkrat, next.Junkrat)
+		} else {
+			heroesWDL["junkrat"] = makeWDL(&emptyHeroStruct, next.Junkrat)
+		}
+	}
+	if next.Lucio != nil {
+		if prev.Lucio != nil {
+			heroesWDL["lucio"] = makeWDL(prev.Lucio, next.Lucio)
+		} else {
+			heroesWDL["lucio"] = makeWDL(&emptyHeroStruct, next.Lucio)
+		}
+	}
+	if next.Mccree != nil {
+		if prev.Mccree != nil {
+			heroesWDL["mccree"] = makeWDL(prev.Mccree, next.Mccree)
+		} else {
+			heroesWDL["mccree"] = makeWDL(&emptyHeroStruct, next.Mccree)
+		}
+	}
+	if next.Mei != nil {
+		if prev.Mei != nil {
+			heroesWDL["mei"] = makeWDL(prev.Mei, next.Mei)
+		} else {
+			heroesWDL["mei"] = makeWDL(&emptyHeroStruct, next.Mei)
+		}
+	}
+	if next.Mercy != nil {
+		if prev.Mercy != nil {
+			heroesWDL["mercy"] = makeWDL(prev.Mercy, next.Mercy)
+		} else {
+			heroesWDL["mercy"] = makeWDL(&emptyHeroStruct, next.Mercy)
+		}
+	}
+	if next.Orisa != nil {
+		if prev.Orisa != nil {
+			heroesWDL["orisa"] = makeWDL(prev.Orisa, next.Orisa)
+		} else {
+			heroesWDL["orisa"] = makeWDL(&emptyHeroStruct, next.Orisa)
+		}
+	}
+	if next.Reinhardt != nil {
+		if prev.Reinhardt != nil {
+			heroesWDL["reinhardt"] = makeWDL(prev.Reinhardt, next.Reinhardt)
+		} else {
+			heroesWDL["reinhardt"] = makeWDL(&emptyHeroStruct, next.Reinhardt)
+		}
+	}
+	if next.Roadhog != nil {
+		if prev.Roadhog != nil {
+			heroesWDL["roadhog"] = makeWDL(prev.Roadhog, next.Roadhog)
+		} else {
+			heroesWDL["roadhog"] = makeWDL(&emptyHeroStruct, next.Roadhog)
+		}
+	}
+	if next.Soldier76 != nil {
+		if prev.Soldier76 != nil {
+			heroesWDL["soldier76"] = makeWDL(prev.Soldier76, next.Soldier76)
+		} else {
+			heroesWDL["soldier76"] = makeWDL(&emptyHeroStruct, next.Soldier76)
+		}
+	}
+	if next.Torbjorn != nil {
+		if prev.Torbjorn != nil {
+			heroesWDL["torbjorn"] = makeWDL(prev.Torbjorn, next.Torbjorn)
+		} else {
+			heroesWDL["torbjorn"] = makeWDL(&emptyHeroStruct, next.Torbjorn)
+		}
+	}
+	if next.Tracer != nil {
+		if prev.Tracer != nil {
+			heroesWDL["tracer"] = makeWDL(prev.Tracer, next.Tracer)
+		} else {
+			heroesWDL["tracer"] = makeWDL(&emptyHeroStruct, next.Tracer)
+		}
+	}
+	if next.Winston != nil {
+		if prev.Winston != nil {
+			heroesWDL["winston"] = makeWDL(prev.Winston, next.Winston)
+		} else {
+			heroesWDL["winston"] = makeWDL(&emptyHeroStruct, next.Winston)
+		}
+	}
+	if next.Zarya != nil {
+		if prev.Zarya != nil {
+			heroesWDL["zarya"] = makeWDL(prev.Zarya, next.Zarya)
+		} else {
+			heroesWDL["zarya"] = makeWDL(&emptyHeroStruct, next.Zarya)
+		}
+	}
+	if next.Zenyatta != nil {
+		if prev.Zenyatta != nil {
+			heroesWDL["zenyatta"] = makeWDL(prev.Zenyatta, next.Zenyatta)
+		} else {
+			heroesWDL["zenyatta"] = makeWDL(&emptyHeroStruct, next.Zenyatta)
+		}
+	}
+	if next.Ana != nil {
+		if prev.Ana != nil {
+			heroesWDL["ana"] = makeWDL(prev.Ana, next.Ana)
+		} else {
+			heroesWDL["ana"] = makeWDL(&emptyHeroStruct, next.Ana)
+		}
+	}
+
+	return heroesWDL
+}
+
+func makeWDL(prev *overwatch.HeroStruct, next *overwatch.HeroStruct) WDL {
+	return WDL{
+		Win:  int(next.GeneralStats.GamesWon - prev.GeneralStats.GamesWon),
+		Draw: int((next.GeneralStats.GamesPlayed - next.GeneralStats.GamesWon - next.GeneralStats.GamesLost) - (prev.GeneralStats.GamesPlayed - prev.GeneralStats.GamesWon - prev.GeneralStats.GamesLost)),
+		Loss: int(next.GeneralStats.GamesLost - prev.GeneralStats.GamesLost),
 	}
 }
 

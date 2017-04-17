@@ -61,6 +61,56 @@ func (userStats UserStats) String() string {
 	return fmt.Sprintf("{BattleTag:%v OverallStats:%v}", userStats.BattleTag, userStats.OverallStats)
 }
 
+// Top level response to a u/<battle-tag>/heroes request
+type heroesResponse struct {
+	KR *RegionHeroes `json:"kr"`
+	EU *RegionHeroes `json:"eu"`
+	US *RegionHeroes `json:"us"`
+}
+
+type RegionHeroes struct {
+	Heroes struct {
+		Stats struct {
+			Competitive *AllHeroStats `json:"competitive"`
+			// Quickplay is ignored
+		} `json:"stats"`
+	} `json:"heroes"`
+}
+
+type AllHeroStats struct {
+	Ana       *HeroStruct `json:"ana"`
+	Bastion   *HeroStruct `json:"bastion"`
+	Dva       *HeroStruct `json:"dva"`
+	Junkrat   *HeroStruct `json:"junkrat"`
+	Lucio     *HeroStruct `json:"lucio"`
+	Mccree    *HeroStruct `json:"mccree"`
+	Mei       *HeroStruct `json:"mei"`
+	Mercy     *HeroStruct `json:"mercy"`
+	Orisa     *HeroStruct `json:"orisa"`
+	Reinhardt *HeroStruct `json:"reinhardt"`
+	Roadhog   *HeroStruct `json:"roadhog"`
+	Soldier76 *HeroStruct `json:"soldier76"`
+	Torbjorn  *HeroStruct `json:"torbjorn"`
+	Tracer    *HeroStruct `json:"tracer"`
+	Winston   *HeroStruct `json:"winston"`
+	Zarya     *HeroStruct `json:"zarya"`
+	Zenyatta  *HeroStruct `json:"zenyatta"`
+}
+
+type HeroStruct struct {
+	// AverageStats is ignored
+	GeneralStats struct {
+		GamesLost   float32 `json:"games_lost"`
+		GamesPlayed float32 `json:"games_played"`
+		GamesWon    float32 `json:"games_won"`
+	} `json:"general_stats"`
+	// HeroStats is ignored
+}
+
+func (heroStruct HeroStruct) String() string {
+	return fmt.Sprintf("{Played:%v Won:%v Lost:%v}", heroStruct.GeneralStats.GamesPlayed, heroStruct.GeneralStats.GamesWon, heroStruct.GeneralStats.GamesLost)
+}
+
 // ErrorResponse is an error that is populated with additional error
 // data for the failed request.
 // TODO: do we get any extra data on error?
@@ -215,6 +265,37 @@ func (ow *OverwatchClient) GetStats(ctx context.Context, battleTag string) (*Use
 	return userStats, nil
 }
 
+func (ow *OverwatchClient) GetHeroes(ctx context.Context, battleTag string) (*AllHeroStats, error) {
+	// Url friendly battleTag
+	battleTag = strings.Replace(battleTag, "#", "-", -1)
+
+	// We wait here until either we can obtain a "request token" from nextCh,
+	// or our context is canceled.
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-ow.nextCh:
+		defer func() {
+			ow.nextCh <- true
+		}()
+	}
+
+	path := fmt.Sprintf("u/%s/heroes", battleTag)
+	req, err := ow.NewRequest(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &heroesResponse{}
+	_, err = ow.Do(req, res)
+	if err != nil {
+		return nil, err
+	}
+
+	regionHeroes, _ := ow.getUSRegion(res)
+	return regionHeroes.Heroes.Stats.Competitive, nil
+}
+
 // Takes a stats response and returns the "best matching" region.
 // The best match is the region with most played games in. May
 // return nil if all regions are nil.
@@ -244,4 +325,8 @@ func (ow *OverwatchClient) getBestRegion(res *statsResponse) (*regionStats, stri
 		}
 	}
 	return bestMatch.stats, bestMatch.name
+}
+
+func (ow *OverwatchClient) getUSRegion(res *heroesResponse) (*RegionHeroes, string) {
+	return res.US, "US"
 }

@@ -22,30 +22,31 @@ const (
 	maxGetUserStatsAttempts = 10
 )
 
+// are these guild specific?
 var HeroEmojiMap = map[string]string{
-	"ana":        "ana",
-	"bastion":    "bastion",
-	"dva":        "dva",
-	"genji":      "genji",
-	"hanzo":      "hanzo",
-	"junkrat":    "junkrat",
-	"lucio":      "lucio",
-	"mccree":     "mccree",
-	"mei":        "mei",
-	"mercy":      "mercy",
-	"orisa":      "orisa",
-	"pharah":     "pharah",
-	"reaper":     "reaper",
-	"reinhardt":  "reinhardt",
-	"roadhog":    "roadhog",
-	"soldier76":  "soldier76",
-	"symmetra":   "symmetra",
-	"torbjorn":   "torbjorn",
-	"tracer":     "tracer",
-	"widowmaker": "widowmaker",
-	"winston":    "winston",
-	"zarya":      "zarya",
-	"zenyatta":   "zenyatta",
+	"ana":        "<:ana:303409414151340035> ",
+	"bastion":    "<:bastion:303409414554255360>",
+	"dva":        "<:dva:303409415107772416>",
+	"genji":      "<:genji:303409415187333130>",
+	"hanzo":      "<:hanzo:303409414776422412>",
+	"junkrat":    "<:junkrat:303409415112097792>",
+	"lucio":      "<:lucio:303409415422476289>",
+	"mccree":     "<:mccree:303409414780747786>",
+	"mei":        "<:mei:303409415317356544>",
+	"mercy":      "<:mercy:303409415346978818>",
+	"orisa":      "<:orisa:303409418207232000>",
+	"pharah":     "<:pharah:303409415065960450>",
+	"reaper":     "<:reaper:303409414487015425>",
+	"reinhardt":  "<:reinhardt:303409415011303425>",
+	"roadhog":    "<:roadhog:303409415409762315>",
+	"soldier76":  "<:soldier_76:303409415069892609>",
+	"symmetra":   "<:symmetra:303409415787380736>",
+	"torbjorn":   "<:torbjorn:303409415514619904>",
+	"tracer":     "<:tracer:303409415581859840>",
+	"widowmaker": "<:widowmaker:303409415480934400>",
+	"winston":    "<:winston:303409414822690821>",
+	"zarya":      "<:zarya:303409415472676874>",
+	"zenyatta":   "<:zenyatta:303409415166623745>",
 }
 
 type playerSessionData struct {
@@ -141,8 +142,8 @@ func (bot *Bot) readyHandler(session *discordgo.Session, ready *discordgo.Ready)
 	bot.discord.SetGuildAndOverwatchChannel()
 	bot.discord.SetPlayerStates(bot.playerStates)
 	bot.setActivePlayerStats(bot.playerStates)
-	msg, _ := bot.discord.ReadMessage("303409836215762944")
-	bot.logger.WithField("msg contents", msg.Content).Debug("emoji check")
+	//msg, _ := bot.discord.ReadMessage("303409836215762944")
+	//bot.logger.WithField("msg contents", msg.Content).Debug("emoji check")
 }
 
 func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *discordgo.PresenceUpdate) {

@@ -85,7 +85,7 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 	// TODO handle overlapping events
 	if startedPlaying(prevPlayerState, nextPlayerState) {
 		ctx, _ := context.WithTimeout(context.Background(), commandTimeout)
-		bot.getPlayerStats(ctx, &nextPlayerState)
+		bot.getOverwatchDataWithDelay(ctx, &nextPlayerState)
 	} else if stoppedPlaying(prevPlayerState, nextPlayerState) {
 		bot.generateSessionReport(&prevPlayerState, &nextPlayerState)
 	}
@@ -94,13 +94,29 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 	bot.logger.WithField("prev", prevPlayerState).WithField("next", nextPlayerState).Debug("player state transition")
 }
 
+func (bot *Bot) getOverwatchDataWithDelay(ctx context.Context, playerState *player.PlayerState) {
+	bot.getPlayerStats(ctx, playerState)
+	// without a delay owapi sometimes returns 429 Too Many Requests
+	time.Sleep(1 * time.Second)
+	bot.getPlayerHeroes(ctx, playerState)
+}
+
 func (bot *Bot) getPlayerStats(ctx context.Context, playerState *player.PlayerState) {
 	stats, err := bot.overwatch.GetStats(ctx, playerState.BattleTag)
 	if err != nil {
-		bot.logger.WithError(err).Error("failed call to overwatch api")
+		bot.logger.WithError(err).Error("failed owapi stats request")
 	}
 
 	playerState.UserStats = stats
+}
+
+func (bot *Bot) getPlayerHeroes(ctx context.Context, playerState *player.PlayerState) {
+	heroes, err := bot.overwatch.GetHeroes(ctx, playerState.BattleTag)
+	if err != nil {
+		bot.logger.WithError(err).Error("failed owapi heroes request")
+	}
+
+	playerState.AllHeroStats = heroes
 }
 
 func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState) {
@@ -128,9 +144,9 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 		bot.logger.WithField("attempt", i).Debug("retry")
 
 		ctx, _ := context.WithTimeout(context.Background(), commandTimeout)
-		bot.getPlayerStats(ctx, next)
+		bot.getOverwatchDataWithDelay(ctx, next)
 
-		if isStatsDifferent(prev.UserStats, next.UserStats) {
+		if isStatsDifferent(prev.AllHeroStats, next.AllHeroStats) {
 			bot.logger.Debug("successfully retrieved user stats")
 			break
 		}
@@ -147,17 +163,18 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 	} else if prev.UserStats != nil && next.UserStats == nil {
 		bot.logger.Warn("no next user stats found")
 		messageContent = bot.getTemplateMessage(templateNoChangeMessage, prev)
-	} else if isStatsDifferent(prev.UserStats, next.UserStats) {
+	} else if isStatsDifferent(prev.AllHeroStats, next.AllHeroStats) {
 		hours, minutes := getHoursMinutesFromDuration(next.Timestamp.Sub(prev.Timestamp))
-		bot.logger.WithField("hours", hours).WithField("minutes", minutes).Debug("session duration")
-
-		messageContent = bot.getTemplateMessage(templateDiffMessage, playerSessionData{
+		playerSessionData := playerSessionData{
 			Username: next.User.Username,
 			FinalSR:  next.UserStats.OverallStats.CompRank,
 			SRDiff:   next.UserStats.OverallStats.CompRank - prev.UserStats.OverallStats.CompRank,
 			Hours:    hours,
 			Minutes:  minutes,
-		})
+		}
+		messageContent = bot.getTemplateMessage(templateDiffMessage, playerSessionData)
+
+		bot.logger.WithField("playerSessionData", playerSessionData).Info("outputting session data")
 	} else {
 		// do nothing when there is no change
 	}
@@ -183,7 +200,7 @@ func stoppedPlaying(prev player.PlayerState, next player.PlayerState) bool {
 	return false
 }
 
-func isStatsDifferent(prev *overwatch.UserStats, next *overwatch.UserStats) bool {
+func isStatsDifferent(prev *overwatch.AllHeroStats, next *overwatch.AllHeroStats) bool {
 	if reflect.DeepEqual(prev, next) {
 		return false
 	}

@@ -12,12 +12,13 @@ type PlayerState struct {
 	User *discordgo.User
 	Game *discordgo.Game
 
-	BattleTag string
-	UserStats *overwatch.UserStats
+	BattleTag    string
+	UserStats    *overwatch.UserStats
+	AllHeroStats *overwatch.AllHeroStats
 
 	Timestamp time.Time
 }
 
 func (state PlayerState) String() string {
-	return fmt.Sprintf("{User:%v Game:%v BattleTag:%v UserStats:%v Timestamp:%v}", state.User, state.Game, state.BattleTag, state.UserStats, state.Timestamp)
+	return fmt.Sprintf("{User:%v Game:%v BattleTag:%v UserStats:%v AllHeroStats:%v Timestamp:%v}", state.User, state.Game, state.BattleTag, state.UserStats, state.AllHeroStats, state.Timestamp)
 }

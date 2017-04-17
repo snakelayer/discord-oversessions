@@ -68,6 +68,8 @@ func (bot *Bot) readyHandler(session *discordgo.Session, ready *discordgo.Ready)
 	bot.discord.SetGuildAndOverwatchChannel()
 	bot.discord.SetPlayerStates(bot.playerStates)
 	bot.setActivePlayerStats(bot.playerStates)
+	msg, _ := bot.discord.ReadMessage("303409836215762944")
+	bot.logger.WithField("msg contents", msg.Content).Debug("emoji check")
 }
 
 func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *discordgo.PresenceUpdate) {

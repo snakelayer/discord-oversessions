@@ -132,6 +132,18 @@ func (discordAdapter *DiscordAdapter) UpdateMessage(messageId string, content st
 	return discordAdapter.session.ChannelMessageEdit(discordAdapter.channel.ID, messageId, content)
 }
 
+func (discordAdapter *DiscordAdapter) ReadMessage(messageId string) (m *discordgo.Message, err error) {
+	if messageId == "" {
+		return nil, errors.New("missing messageId")
+	}
+
+	if discordAdapter.channel.ID == "" {
+		return nil, errors.New("no text channel for message sending")
+	}
+
+	return discordAdapter.session.ChannelMessage(discordAdapter.channel.ID, messageId)
+}
+
 func (discordAdapter *DiscordAdapter) IsOverwatch(game *discordgo.Game) bool {
 	if game == nil {
 		return false

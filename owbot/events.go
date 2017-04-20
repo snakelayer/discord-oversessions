@@ -40,6 +40,7 @@ var HeroEmojiMap = map[string]string{
 	"reinhardt":  "<:reinhardt:303409415011303425>",
 	"roadhog":    "<:roadhog:303409415409762315>",
 	"soldier76":  "<:soldier_76:303409415069892609>",
+	"sombra":     "<:sombra:304543090541068289>",
 	"symmetra":   "<:symmetra:303409415787380736>",
 	"torbjorn":   "<:torbjorn:303409415514619904>",
 	"tracer":     "<:tracer:303409415581859840>",
@@ -284,6 +285,20 @@ func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHe
 			heroesWDL["dva"] = makeWDL(&emptyHeroStruct, next.Dva)
 		}
 	}
+	if next.Genji != nil {
+		if prev.Genji != nil {
+			heroesWDL["genji"] = makeWDL(prev.Genji, next.Genji)
+		} else {
+			heroesWDL["genji"] = makeWDL(&emptyHeroStruct, next.Genji)
+		}
+	}
+	if next.Hanzo != nil {
+		if prev.Hanzo != nil {
+			heroesWDL["hanzo"] = makeWDL(prev.Hanzo, next.Hanzo)
+		} else {
+			heroesWDL["hanzo"] = makeWDL(&emptyHeroStruct, next.Hanzo)
+		}
+	}
 	if next.Junkrat != nil {
 		if prev.Junkrat != nil {
 			heroesWDL["junkrat"] = makeWDL(prev.Junkrat, next.Junkrat)
@@ -326,6 +341,13 @@ func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHe
 			heroesWDL["orisa"] = makeWDL(&emptyHeroStruct, next.Orisa)
 		}
 	}
+	if next.Reaper != nil {
+		if prev.Reaper != nil {
+			heroesWDL["reaper"] = makeWDL(prev.Reaper, next.Reaper)
+		} else {
+			heroesWDL["reaper"] = makeWDL(&emptyHeroStruct, next.Reaper)
+		}
+	}
 	if next.Reinhardt != nil {
 		if prev.Reinhardt != nil {
 			heroesWDL["reinhardt"] = makeWDL(prev.Reinhardt, next.Reinhardt)
@@ -347,6 +369,20 @@ func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHe
 			heroesWDL["soldier76"] = makeWDL(&emptyHeroStruct, next.Soldier76)
 		}
 	}
+	if next.Sombra != nil {
+		if prev.Sombra != nil {
+			heroesWDL["sombra"] = makeWDL(prev.Sombra, next.Sombra)
+		} else {
+			heroesWDL["sombra"] = makeWDL(&emptyHeroStruct, next.Sombra)
+		}
+	}
+	if next.Symmetra != nil {
+		if prev.Symmetra != nil {
+			heroesWDL["symmetra"] = makeWDL(prev.Symmetra, next.Symmetra)
+		} else {
+			heroesWDL["symmetra"] = makeWDL(&emptyHeroStruct, next.Symmetra)
+		}
+	}
 	if next.Torbjorn != nil {
 		if prev.Torbjorn != nil {
 			heroesWDL["torbjorn"] = makeWDL(prev.Torbjorn, next.Torbjorn)
@@ -359,6 +395,13 @@ func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHe
 			heroesWDL["tracer"] = makeWDL(prev.Tracer, next.Tracer)
 		} else {
 			heroesWDL["tracer"] = makeWDL(&emptyHeroStruct, next.Tracer)
+		}
+	}
+	if next.Widowmaker != nil {
+		if prev.Widowmaker != nil {
+			heroesWDL["widowmaker"] = makeWDL(prev.Widowmaker, next.Widowmaker)
+		} else {
+			heroesWDL["widowmaker"] = makeWDL(&emptyHeroStruct, next.Widowmaker)
 		}
 	}
 	if next.Winston != nil {
@@ -380,13 +423,6 @@ func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHe
 			heroesWDL["zenyatta"] = makeWDL(prev.Zenyatta, next.Zenyatta)
 		} else {
 			heroesWDL["zenyatta"] = makeWDL(&emptyHeroStruct, next.Zenyatta)
-		}
-	}
-	if next.Ana != nil {
-		if prev.Ana != nil {
-			heroesWDL["ana"] = makeWDL(prev.Ana, next.Ana)
-		} else {
-			heroesWDL["ana"] = makeWDL(&emptyHeroStruct, next.Ana)
 		}
 	}
 

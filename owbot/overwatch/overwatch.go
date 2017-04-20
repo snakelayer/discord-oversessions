@@ -79,23 +79,29 @@ type RegionHeroes struct {
 }
 
 type AllHeroStats struct {
-	Ana       *HeroStruct `json:"ana"`
-	Bastion   *HeroStruct `json:"bastion"`
-	Dva       *HeroStruct `json:"dva"`
-	Junkrat   *HeroStruct `json:"junkrat"`
-	Lucio     *HeroStruct `json:"lucio"`
-	Mccree    *HeroStruct `json:"mccree"`
-	Mei       *HeroStruct `json:"mei"`
-	Mercy     *HeroStruct `json:"mercy"`
-	Orisa     *HeroStruct `json:"orisa"`
-	Reinhardt *HeroStruct `json:"reinhardt"`
-	Roadhog   *HeroStruct `json:"roadhog"`
-	Soldier76 *HeroStruct `json:"soldier76"`
-	Torbjorn  *HeroStruct `json:"torbjorn"`
-	Tracer    *HeroStruct `json:"tracer"`
-	Winston   *HeroStruct `json:"winston"`
-	Zarya     *HeroStruct `json:"zarya"`
-	Zenyatta  *HeroStruct `json:"zenyatta"`
+	Ana        *HeroStruct `json:"ana"`
+	Bastion    *HeroStruct `json:"bastion"`
+	Dva        *HeroStruct `json:"dva"`
+	Genji      *HeroStruct `json:"genji"`
+	Hanzo      *HeroStruct `json:"hanzo"`
+	Junkrat    *HeroStruct `json:"junkrat"`
+	Lucio      *HeroStruct `json:"lucio"`
+	Mccree     *HeroStruct `json:"mccree"`
+	Mei        *HeroStruct `json:"mei"`
+	Mercy      *HeroStruct `json:"mercy"`
+	Orisa      *HeroStruct `json:"orisa"`
+	Reaper     *HeroStruct `json:"reaper"`
+	Reinhardt  *HeroStruct `json:"reinhardt"`
+	Roadhog    *HeroStruct `json:"roadhog"`
+	Soldier76  *HeroStruct `json:"soldier76"`
+	Sombra     *HeroStruct `json:"sombra"`
+	Symmetra   *HeroStruct `json:"symmetra"`
+	Torbjorn   *HeroStruct `json:"torbjorn"`
+	Tracer     *HeroStruct `json:"tracer"`
+	Widowmaker *HeroStruct `json:"widowmaker"`
+	Winston    *HeroStruct `json:"winston"`
+	Zarya      *HeroStruct `json:"zarya"`
+	Zenyatta   *HeroStruct `json:"zenyatta"`
 }
 
 type HeroStruct struct {

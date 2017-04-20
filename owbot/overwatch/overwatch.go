@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -223,7 +224,7 @@ func (ow *OverwatchClient) Do(req *http.Request, v interface{}) (*http.Response,
 }
 
 // Returns a UserStats object for the provided BattleTag.
-func (ow *OverwatchClient) GetStats(ctx context.Context, battleTag string) (*UserStats, error) {
+func (ow *OverwatchClient) getStats(ctx context.Context, battleTag string) (*UserStats, error) {
 	// Url friendly battleTag
 	battleTag = strings.Replace(battleTag, "#", "-", -1)
 
@@ -265,7 +266,7 @@ func (ow *OverwatchClient) GetStats(ctx context.Context, battleTag string) (*Use
 	return userStats, nil
 }
 
-func (ow *OverwatchClient) GetHeroes(ctx context.Context, battleTag string) (*AllHeroStats, error) {
+func (ow *OverwatchClient) getHeroes(ctx context.Context, battleTag string) (*AllHeroStats, error) {
 	// Url friendly battleTag
 	battleTag = strings.Replace(battleTag, "#", "-", -1)
 
@@ -329,4 +330,21 @@ func (ow *OverwatchClient) getBestRegion(res *statsResponse) (*regionStats, stri
 
 func (ow *OverwatchClient) getUSRegion(res *heroesResponse) (*RegionHeroes, string) {
 	return res.US, "US"
+}
+
+func (ow *OverwatchClient) GetStatsAndHeroes(ctx context.Context, battleTag string) (*UserStats, *AllHeroStats, error) {
+	stats, err := ow.getStats(ctx, battleTag)
+	if err != nil {
+		return nil, nil, errors.New("owapi stats request failed")
+	}
+
+	// without a delay owapi sometimes returns 429 Too Many Requests
+	time.Sleep(1 * time.Second)
+
+	heroes, err := ow.getHeroes(ctx, battleTag)
+	if err != nil {
+		return nil, nil, errors.New("owapi heroes request failed")
+	}
+
+	return stats, heroes, nil
 }

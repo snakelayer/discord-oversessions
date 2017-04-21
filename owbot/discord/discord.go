@@ -49,7 +49,7 @@ func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]pl
 		userId := presence.User.ID
 
 		playerState := playerStates[userId]
-		discordAdapter.setUser(userId, &playerState)
+		discordAdapter.SetUser(userId, &playerState)
 		if playerState.User.Bot {
 			delete(playerStates, userId)
 			continue
@@ -64,7 +64,7 @@ func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]pl
 	}
 }
 
-func (discordAdapter *DiscordAdapter) setUser(userId string, playerState *player.PlayerState) {
+func (discordAdapter *DiscordAdapter) SetUser(userId string, playerState *player.PlayerState) {
 	user, err := discordAdapter.session.User(userId)
 	if err != nil {
 		discordAdapter.logger.WithField("userId", userId).Error("could not find user")

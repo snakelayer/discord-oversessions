@@ -160,6 +160,10 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 		return
 	}
 
+	if prevPlayerState.User == nil {
+		bot.discord.SetUser(userId, &prevPlayerState)
+	}
+
 	var nextPlayerState = prevPlayerState
 	nextPlayerState.Timestamp = time.Now()
 	nextPlayerState.Game = presenceUpdate.Game

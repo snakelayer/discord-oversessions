@@ -198,6 +198,10 @@ func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState)
 }
 
 func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.PlayerState) {
+	if prev.User == nil {
+		bot.logger.WithField("playerState", prev).Error("skipping session report with missing User field")
+		return
+	}
 
 	// unfortunately, owapi only updates after a player has closed overwatch,
 	// and sometimes it takes several minutes before changes are visible
@@ -239,6 +243,7 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 		bot.logger.WithField("playerSessionData", playerSessionData).Info("outputting session data")
 	} else {
 		// do nothing when there is no change
+		bot.logger.Info("session ended with no change")
 	}
 
 	if messageContent != "" {

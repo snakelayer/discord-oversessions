@@ -49,7 +49,9 @@ func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]pl
 		userId := presence.User.ID
 
 		playerState := playerStates[userId]
-		discordAdapter.SetUser(userId, &playerState)
+		if discordAdapter.SetUser(userId, &playerState) != nil {
+			continue
+		}
 		if playerState.User.Bot {
 			delete(playerStates, userId)
 			continue
@@ -64,14 +66,16 @@ func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]pl
 	}
 }
 
-func (discordAdapter *DiscordAdapter) SetUser(userId string, playerState *player.PlayerState) {
+func (discordAdapter *DiscordAdapter) SetUser(userId string, playerState *player.PlayerState) error {
 	user, err := discordAdapter.session.User(userId)
 	if err != nil {
-		discordAdapter.logger.WithField("userId", userId).Error("could not find user")
+		discordAdapter.logger.WithError(err).WithField("userId", userId).Error("could not find user")
+		return err
 	}
 
-	discordAdapter.logger.WithField("user", user).Debug("user data")
+	discordAdapter.logger.WithField("user", user).Debug("retrieved discord user data")
 	playerState.User = user
+	return nil
 }
 
 func (discordAdapter *DiscordAdapter) SetGuildAndOverwatchChannel() {

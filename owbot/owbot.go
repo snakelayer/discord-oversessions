@@ -68,3 +68,12 @@ func NewBot(logger *logrus.Logger, token string, battleTagMap map[string]string)
 		playerStates: playerStates,
 	}, nil
 }
+
+func (bot *Bot) HasBattleTag(userId string) bool {
+	if bot.playerStates[userId].BattleTag == "" {
+		bot.logger.WithField("userId", userId).Info("no associated battleTag")
+		return false
+	}
+
+	return true
+}

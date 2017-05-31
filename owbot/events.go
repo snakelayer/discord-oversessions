@@ -22,9 +22,6 @@ const (
 	maxGetUserStatsAttempts = 10
 )
 
-// duration within which a presenceUpdate event should be considered a duplicate
-var newEventDelay = time.Duration(5) * time.Second
-
 // are these guild specific?
 var HeroEmojiMap = map[string]string{
 	"ana":        "<:ana:303409414151340035> ",
@@ -157,16 +154,17 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 	}
 
 	userId := presenceUpdate.User.ID
-	prevPlayerState := bot.playerStates[userId]
-	if prevPlayerState.BattleTag == "" {
-		bot.logger.WithField("userId", userId).Info("no associated battleTag")
+	if !bot.HasBattleTag(userId) {
 		return
 	}
 
+	prevPlayerState := bot.playerStates[userId]
+
 	prevPlayerState.UpdateMutex.Lock()
 	defer prevPlayerState.UpdateMutex.Unlock()
-	if time.Since(prevPlayerState.Timestamp) < newEventDelay {
-		bot.logger.WithField("userId", userId).Info("concurrent presenceUpdate detected")
+
+	if prevPlayerState.RecentlyUpdated() {
+		bot.logger.WithField("userId", userId).Info("abort processing due to recent change")
 		return
 	}
 

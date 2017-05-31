@@ -9,6 +9,9 @@ import (
 	"github.com/snakelayer/discord-oversessions/owbot/overwatch"
 )
 
+// duration within which a change is considered recent
+var recentDuration = time.Duration(2) * time.Second
+
 type PlayerState struct {
 	UpdateMutex *sync.Mutex
 
@@ -20,6 +23,14 @@ type PlayerState struct {
 	AllHeroStats *overwatch.AllHeroStats
 
 	Timestamp time.Time
+}
+
+func (state PlayerState) RecentlyUpdated() bool {
+	if time.Since(state.Timestamp) < recentDuration {
+		return true
+	}
+
+	return false
 }
 
 func (state PlayerState) String() string {

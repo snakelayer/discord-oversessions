@@ -1,6 +1,9 @@
 package owbot
 
 import (
+	"sync"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/snakelayer/discord-oversessions/owbot/discord"
 	"github.com/snakelayer/discord-oversessions/owbot/overwatch"
@@ -50,7 +53,10 @@ func NewBot(logger *logrus.Logger, token string, battleTagMap map[string]string)
 
 	var playerStates = make(map[string]player.PlayerState)
 	for userId, battleTag := range battleTagMap {
-		playerState := player.PlayerState{BattleTag: battleTag}
+		playerState := player.PlayerState{
+			BattleTag:   battleTag,
+			Timestamp:   time.Now(),
+			UpdateMutex: new(sync.Mutex)}
 		playerStates[userId] = playerState
 		logger.WithField("userId", userId).WithField("battleTag", battleTag).Debug("initialized player state")
 	}

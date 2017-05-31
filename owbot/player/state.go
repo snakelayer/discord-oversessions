@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -9,6 +10,8 @@ import (
 )
 
 type PlayerState struct {
+	UpdateMutex *sync.Mutex
+
 	User *discordgo.User
 	Game *discordgo.Game
 

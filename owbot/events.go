@@ -22,6 +22,9 @@ const (
 	maxGetUserStatsAttempts = 10
 )
 
+// duration within which a presenceUpdate event should be considered a duplicate
+var newEventDelay = time.Duration(5) * time.Second
+
 // are these guild specific?
 var HeroEmojiMap = map[string]string{
 	"ana":        "<:ana:303409414151340035> ",
@@ -160,15 +163,20 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 		return
 	}
 
+	prevPlayerState.UpdateMutex.Lock()
+	defer prevPlayerState.UpdateMutex.Unlock()
+	if time.Since(prevPlayerState.Timestamp) < newEventDelay {
+		bot.logger.WithField("userId", userId).Info("concurrent presenceUpdate detected")
+		return
+	}
+
 	if prevPlayerState.User == nil {
 		bot.discord.SetUser(userId, &prevPlayerState)
 	}
 
 	var nextPlayerState = prevPlayerState
-	nextPlayerState.Timestamp = time.Now()
 	nextPlayerState.Game = presenceUpdate.Game
 
-	// TODO handle overlapping events
 	if startedPlaying(prevPlayerState, nextPlayerState) {
 		err := bot.setPlayerStatsAndHeroes(&nextPlayerState)
 		if err != nil {
@@ -178,6 +186,7 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 		bot.generateSessionReport(&prevPlayerState, &nextPlayerState)
 	}
 
+	nextPlayerState.Timestamp = time.Now()
 	bot.playerStates[userId] = nextPlayerState
 	bot.logger.WithField("prev", prevPlayerState).WithField("next", nextPlayerState).Debug("player state transition")
 }

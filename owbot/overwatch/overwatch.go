@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -18,15 +17,20 @@ const (
 	apiBaseUrl = "https://owapi.net/api/v3/"
 )
 
-// Top level response to a u/<battle-tag>/stats request
-type statsResponse struct {
-	KR *regionStats `json:"kr"`
-	EU *regionStats `json:"eu"`
-	US *regionStats `json:"us"`
+// Top level response to a u/<battle-tag>/blob request
+type BlobResponse struct {
+	KR *RegionBlob `json:"kr"`
+	EU *RegionBlob `json:"eu"`
+	US *RegionBlob `json:"us"`
 }
 
-// Region sub-level part of the stats response
-type regionStats struct {
+type RegionBlob struct {
+	Heroes struct {
+		Stats struct {
+			Competitive *AllHeroStats `json:"competitive"`
+			// Quickplay is ignored
+		} `json:"stats"`
+	} `json:"heroes"`
 	Stats struct {
 		Competitive *UserStats `json:"competitive"`
 	} `json:"stats"`
@@ -60,22 +64,6 @@ type UserStats struct {
 
 func (userStats UserStats) String() string {
 	return fmt.Sprintf("{BattleTag:%v OverallStats:%v}", userStats.BattleTag, userStats.OverallStats)
-}
-
-// Top level response to a u/<battle-tag>/heroes request
-type heroesResponse struct {
-	KR *RegionHeroes `json:"kr"`
-	EU *RegionHeroes `json:"eu"`
-	US *RegionHeroes `json:"us"`
-}
-
-type RegionHeroes struct {
-	Heroes struct {
-		Stats struct {
-			Competitive *AllHeroStats `json:"competitive"`
-			// Quickplay is ignored
-		} `json:"stats"`
-	} `json:"heroes"`
 }
 
 type AllHeroStats struct {
@@ -230,8 +218,7 @@ func (ow *OverwatchClient) Do(req *http.Request, v interface{}) (*http.Response,
 	return resp, nil
 }
 
-// Returns a UserStats object for the provided BattleTag.
-func (ow *OverwatchClient) getStats(ctx context.Context, battleTag string) (*UserStats, error) {
+func (ow *OverwatchClient) getUSPlayerBlob(ctx context.Context, battleTag string) (*RegionBlob, error) {
 	// Url friendly battleTag
 	battleTag = strings.Replace(battleTag, "#", "-", -1)
 
@@ -246,112 +233,31 @@ func (ow *OverwatchClient) getStats(ctx context.Context, battleTag string) (*Use
 		}()
 	}
 
-	path := fmt.Sprintf("u/%s/stats", battleTag)
+	path := fmt.Sprintf("u/%s/blob", battleTag)
 	req, err := ow.NewRequest(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &statsResponse{}
+	res := &BlobResponse{}
 	_, err = ow.Do(req, res)
 	if err != nil {
 		return nil, err
 	}
 
-	// Determine the region to use
-	regionStats, regionName := ow.getBestRegion(res)
-	if regionStats == nil || regionStats.Stats.Competitive == nil {
-		return nil, errors.New("Could not find a region with " +
-			"competitive stats for player")
-	}
-
-	// Grab the userStats, also add the battle tag from the request
-	userStats := regionStats.Stats.Competitive
-	userStats.BattleTag = battleTag
-	userStats.Region = regionName
-
-	return userStats, nil
-}
-
-func (ow *OverwatchClient) getHeroes(ctx context.Context, battleTag string) (*AllHeroStats, error) {
-	// Url friendly battleTag
-	battleTag = strings.Replace(battleTag, "#", "-", -1)
-
-	// We wait here until either we can obtain a "request token" from nextCh,
-	// or our context is canceled.
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-ow.nextCh:
-		defer func() {
-			ow.nextCh <- true
-		}()
-	}
-
-	path := fmt.Sprintf("u/%s/heroes", battleTag)
-	req, err := ow.NewRequest(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-
-	res := &heroesResponse{}
-	_, err = ow.Do(req, res)
-	if err != nil {
-		return nil, err
-	}
-
-	regionHeroes, _ := ow.getUSRegion(res)
-	return regionHeroes.Heroes.Stats.Competitive, nil
-}
-
-// Takes a stats response and returns the "best matching" region.
-// The best match is the region with most played games in. May
-// return nil if all regions are nil.
-func (ow *OverwatchClient) getBestRegion(res *statsResponse) (*regionStats, string) {
-	type region struct {
-		name  string
-		stats *regionStats
-	}
-	regions := []region{
-		{"US", res.US},
-		{"EU", res.EU},
-		{"KR", res.KR},
-	}
-	var bestMatch region
-	mostPlayed := 0
-
-	for _, region := range regions {
-		stats := region.stats
-
-		if stats == nil || stats.Stats.Competitive == nil {
-			continue
-		}
-		regionPlayed := stats.Stats.Competitive.OverallStats.Games
-		if regionPlayed > mostPlayed {
-			mostPlayed = regionPlayed
-			bestMatch = region
-		}
-	}
-	return bestMatch.stats, bestMatch.name
-}
-
-func (ow *OverwatchClient) getUSRegion(res *heroesResponse) (*RegionHeroes, string) {
-	return res.US, "US"
+	return res.US, nil
 }
 
 func (ow *OverwatchClient) GetStatsAndHeroes(ctx context.Context, battleTag string) (*UserStats, *AllHeroStats, error) {
-	stats, err := ow.getStats(ctx, battleTag)
+	blob, err := ow.getUSPlayerBlob(ctx, battleTag)
 	if err != nil {
-		return nil, nil, errors.New("owapi stats request failed")
+		return nil, nil, errors.New("owapi blob request failed")
 	}
 
-	// without a delay owapi sometimes returns 429 Too Many Requests
-	time.Sleep(1 * time.Second)
+	blobStats := blob.Stats.Competitive
+	blobStats.BattleTag = battleTag
+	blobStats.Region = "US"
+	blobHeroes := blob.Heroes.Stats.Competitive
 
-	heroes, err := ow.getHeroes(ctx, battleTag)
-	if err != nil {
-		return nil, nil, errors.New("owapi heroes request failed")
-	}
-
-	return stats, heroes, nil
+	return blobStats, blobHeroes, nil
 }

@@ -90,6 +90,7 @@ type AllHeroStats struct {
 	Mei        *HeroStruct `json:"mei"`
 	Mercy      *HeroStruct `json:"mercy"`
 	Orisa      *HeroStruct `json:"orisa"`
+	Pharah     *HeroStruct `json:"pharah"`
 	Reaper     *HeroStruct `json:"reaper"`
 	Reinhardt  *HeroStruct `json:"reinhardt"`
 	Roadhog    *HeroStruct `json:"roadhog"`

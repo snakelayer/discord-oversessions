@@ -5,6 +5,20 @@ import (
 	"reflect"
 )
 
+type WDL struct {
+	Win  int
+	Draw int
+	Loss int
+}
+
+func MakeWDL(prev *HeroStruct, next *HeroStruct) WDL {
+	return WDL{
+		Win:  int(next.GeneralStats.GamesWon - prev.GeneralStats.GamesWon),
+		Draw: int((next.GeneralStats.GamesPlayed - next.GeneralStats.GamesWon - next.GeneralStats.GamesLost) - (prev.GeneralStats.GamesPlayed - prev.GeneralStats.GamesWon - prev.GeneralStats.GamesLost)),
+		Loss: int(next.GeneralStats.GamesLost - prev.GeneralStats.GamesLost),
+	}
+}
+
 // Top level response to a u/<battle-tag>/blob request
 type BlobResponse struct {
 	KR *RegionBlob `json:"kr"`

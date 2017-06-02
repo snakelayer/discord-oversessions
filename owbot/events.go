@@ -57,13 +57,7 @@ type playerSessionData struct {
 	Hours   int
 	Minutes int
 
-	HeroesWDL map[string]WDL
-}
-
-type WDL struct {
-	Win  int
-	Draw int
-	Loss int
+	HeroesWDL map[string]overwatch.WDL
 }
 
 func (sessionData playerSessionData) WinString() string {
@@ -271,8 +265,8 @@ func (bot *Bot) setPlayerBlob(playerState *player.PlayerState) error {
 	return nil
 }
 
-func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHeroStats) map[string]WDL {
-	heroesWDL := make(map[string]WDL)
+func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHeroStats) map[string]overwatch.WDL {
+	heroesWDL := make(map[string]overwatch.WDL)
 
 	emptyHeroStruct := overwatch.HeroStruct{}
 	emptyHeroStruct.GeneralStats.GamesLost = 0
@@ -281,182 +275,174 @@ func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHe
 
 	if next.Ana != nil {
 		if prev.Ana != nil {
-			heroesWDL["ana"] = makeWDL(prev.Ana, next.Ana)
+			heroesWDL["ana"] = overwatch.MakeWDL(prev.Ana, next.Ana)
 		} else {
-			heroesWDL["ana"] = makeWDL(&emptyHeroStruct, next.Ana)
+			heroesWDL["ana"] = overwatch.MakeWDL(&emptyHeroStruct, next.Ana)
 		}
 	}
 	if next.Bastion != nil {
 		if prev.Bastion != nil {
-			heroesWDL["bastion"] = makeWDL(prev.Bastion, next.Bastion)
+			heroesWDL["bastion"] = overwatch.MakeWDL(prev.Bastion, next.Bastion)
 		} else {
-			heroesWDL["bastion"] = makeWDL(&emptyHeroStruct, next.Bastion)
+			heroesWDL["bastion"] = overwatch.MakeWDL(&emptyHeroStruct, next.Bastion)
 		}
 	}
 	if next.Dva != nil {
 		if prev.Dva != nil {
-			heroesWDL["dva"] = makeWDL(prev.Dva, next.Dva)
+			heroesWDL["dva"] = overwatch.MakeWDL(prev.Dva, next.Dva)
 		} else {
-			heroesWDL["dva"] = makeWDL(&emptyHeroStruct, next.Dva)
+			heroesWDL["dva"] = overwatch.MakeWDL(&emptyHeroStruct, next.Dva)
 		}
 	}
 	if next.Genji != nil {
 		if prev.Genji != nil {
-			heroesWDL["genji"] = makeWDL(prev.Genji, next.Genji)
+			heroesWDL["genji"] = overwatch.MakeWDL(prev.Genji, next.Genji)
 		} else {
-			heroesWDL["genji"] = makeWDL(&emptyHeroStruct, next.Genji)
+			heroesWDL["genji"] = overwatch.MakeWDL(&emptyHeroStruct, next.Genji)
 		}
 	}
 	if next.Hanzo != nil {
 		if prev.Hanzo != nil {
-			heroesWDL["hanzo"] = makeWDL(prev.Hanzo, next.Hanzo)
+			heroesWDL["hanzo"] = overwatch.MakeWDL(prev.Hanzo, next.Hanzo)
 		} else {
-			heroesWDL["hanzo"] = makeWDL(&emptyHeroStruct, next.Hanzo)
+			heroesWDL["hanzo"] = overwatch.MakeWDL(&emptyHeroStruct, next.Hanzo)
 		}
 	}
 	if next.Junkrat != nil {
 		if prev.Junkrat != nil {
-			heroesWDL["junkrat"] = makeWDL(prev.Junkrat, next.Junkrat)
+			heroesWDL["junkrat"] = overwatch.MakeWDL(prev.Junkrat, next.Junkrat)
 		} else {
-			heroesWDL["junkrat"] = makeWDL(&emptyHeroStruct, next.Junkrat)
+			heroesWDL["junkrat"] = overwatch.MakeWDL(&emptyHeroStruct, next.Junkrat)
 		}
 	}
 	if next.Lucio != nil {
 		if prev.Lucio != nil {
-			heroesWDL["lucio"] = makeWDL(prev.Lucio, next.Lucio)
+			heroesWDL["lucio"] = overwatch.MakeWDL(prev.Lucio, next.Lucio)
 		} else {
-			heroesWDL["lucio"] = makeWDL(&emptyHeroStruct, next.Lucio)
+			heroesWDL["lucio"] = overwatch.MakeWDL(&emptyHeroStruct, next.Lucio)
 		}
 	}
 	if next.Mccree != nil {
 		if prev.Mccree != nil {
-			heroesWDL["mccree"] = makeWDL(prev.Mccree, next.Mccree)
+			heroesWDL["mccree"] = overwatch.MakeWDL(prev.Mccree, next.Mccree)
 		} else {
-			heroesWDL["mccree"] = makeWDL(&emptyHeroStruct, next.Mccree)
+			heroesWDL["mccree"] = overwatch.MakeWDL(&emptyHeroStruct, next.Mccree)
 		}
 	}
 	if next.Mei != nil {
 		if prev.Mei != nil {
-			heroesWDL["mei"] = makeWDL(prev.Mei, next.Mei)
+			heroesWDL["mei"] = overwatch.MakeWDL(prev.Mei, next.Mei)
 		} else {
-			heroesWDL["mei"] = makeWDL(&emptyHeroStruct, next.Mei)
+			heroesWDL["mei"] = overwatch.MakeWDL(&emptyHeroStruct, next.Mei)
 		}
 	}
 	if next.Mercy != nil {
 		if prev.Mercy != nil {
-			heroesWDL["mercy"] = makeWDL(prev.Mercy, next.Mercy)
+			heroesWDL["mercy"] = overwatch.MakeWDL(prev.Mercy, next.Mercy)
 		} else {
-			heroesWDL["mercy"] = makeWDL(&emptyHeroStruct, next.Mercy)
+			heroesWDL["mercy"] = overwatch.MakeWDL(&emptyHeroStruct, next.Mercy)
 		}
 	}
 	if next.Orisa != nil {
 		if prev.Orisa != nil {
-			heroesWDL["orisa"] = makeWDL(prev.Orisa, next.Orisa)
+			heroesWDL["orisa"] = overwatch.MakeWDL(prev.Orisa, next.Orisa)
 		} else {
-			heroesWDL["orisa"] = makeWDL(&emptyHeroStruct, next.Orisa)
+			heroesWDL["orisa"] = overwatch.MakeWDL(&emptyHeroStruct, next.Orisa)
 		}
 	}
 	if next.Pharah != nil {
 		if prev.Pharah != nil {
-			heroesWDL["pharah"] = makeWDL(prev.Pharah, next.Pharah)
+			heroesWDL["pharah"] = overwatch.MakeWDL(prev.Pharah, next.Pharah)
 		} else {
-			heroesWDL["pharah"] = makeWDL(&emptyHeroStruct, next.Pharah)
+			heroesWDL["pharah"] = overwatch.MakeWDL(&emptyHeroStruct, next.Pharah)
 		}
 	}
 	if next.Reaper != nil {
 		if prev.Reaper != nil {
-			heroesWDL["reaper"] = makeWDL(prev.Reaper, next.Reaper)
+			heroesWDL["reaper"] = overwatch.MakeWDL(prev.Reaper, next.Reaper)
 		} else {
-			heroesWDL["reaper"] = makeWDL(&emptyHeroStruct, next.Reaper)
+			heroesWDL["reaper"] = overwatch.MakeWDL(&emptyHeroStruct, next.Reaper)
 		}
 	}
 	if next.Reinhardt != nil {
 		if prev.Reinhardt != nil {
-			heroesWDL["reinhardt"] = makeWDL(prev.Reinhardt, next.Reinhardt)
+			heroesWDL["reinhardt"] = overwatch.MakeWDL(prev.Reinhardt, next.Reinhardt)
 		} else {
-			heroesWDL["reinhardt"] = makeWDL(&emptyHeroStruct, next.Reinhardt)
+			heroesWDL["reinhardt"] = overwatch.MakeWDL(&emptyHeroStruct, next.Reinhardt)
 		}
 	}
 	if next.Roadhog != nil {
 		if prev.Roadhog != nil {
-			heroesWDL["roadhog"] = makeWDL(prev.Roadhog, next.Roadhog)
+			heroesWDL["roadhog"] = overwatch.MakeWDL(prev.Roadhog, next.Roadhog)
 		} else {
-			heroesWDL["roadhog"] = makeWDL(&emptyHeroStruct, next.Roadhog)
+			heroesWDL["roadhog"] = overwatch.MakeWDL(&emptyHeroStruct, next.Roadhog)
 		}
 	}
 	if next.Soldier76 != nil {
 		if prev.Soldier76 != nil {
-			heroesWDL["soldier76"] = makeWDL(prev.Soldier76, next.Soldier76)
+			heroesWDL["soldier76"] = overwatch.MakeWDL(prev.Soldier76, next.Soldier76)
 		} else {
-			heroesWDL["soldier76"] = makeWDL(&emptyHeroStruct, next.Soldier76)
+			heroesWDL["soldier76"] = overwatch.MakeWDL(&emptyHeroStruct, next.Soldier76)
 		}
 	}
 	if next.Sombra != nil {
 		if prev.Sombra != nil {
-			heroesWDL["sombra"] = makeWDL(prev.Sombra, next.Sombra)
+			heroesWDL["sombra"] = overwatch.MakeWDL(prev.Sombra, next.Sombra)
 		} else {
-			heroesWDL["sombra"] = makeWDL(&emptyHeroStruct, next.Sombra)
+			heroesWDL["sombra"] = overwatch.MakeWDL(&emptyHeroStruct, next.Sombra)
 		}
 	}
 	if next.Symmetra != nil {
 		if prev.Symmetra != nil {
-			heroesWDL["symmetra"] = makeWDL(prev.Symmetra, next.Symmetra)
+			heroesWDL["symmetra"] = overwatch.MakeWDL(prev.Symmetra, next.Symmetra)
 		} else {
-			heroesWDL["symmetra"] = makeWDL(&emptyHeroStruct, next.Symmetra)
+			heroesWDL["symmetra"] = overwatch.MakeWDL(&emptyHeroStruct, next.Symmetra)
 		}
 	}
 	if next.Torbjorn != nil {
 		if prev.Torbjorn != nil {
-			heroesWDL["torbjorn"] = makeWDL(prev.Torbjorn, next.Torbjorn)
+			heroesWDL["torbjorn"] = overwatch.MakeWDL(prev.Torbjorn, next.Torbjorn)
 		} else {
-			heroesWDL["torbjorn"] = makeWDL(&emptyHeroStruct, next.Torbjorn)
+			heroesWDL["torbjorn"] = overwatch.MakeWDL(&emptyHeroStruct, next.Torbjorn)
 		}
 	}
 	if next.Tracer != nil {
 		if prev.Tracer != nil {
-			heroesWDL["tracer"] = makeWDL(prev.Tracer, next.Tracer)
+			heroesWDL["tracer"] = overwatch.MakeWDL(prev.Tracer, next.Tracer)
 		} else {
-			heroesWDL["tracer"] = makeWDL(&emptyHeroStruct, next.Tracer)
+			heroesWDL["tracer"] = overwatch.MakeWDL(&emptyHeroStruct, next.Tracer)
 		}
 	}
 	if next.Widowmaker != nil {
 		if prev.Widowmaker != nil {
-			heroesWDL["widowmaker"] = makeWDL(prev.Widowmaker, next.Widowmaker)
+			heroesWDL["widowmaker"] = overwatch.MakeWDL(prev.Widowmaker, next.Widowmaker)
 		} else {
-			heroesWDL["widowmaker"] = makeWDL(&emptyHeroStruct, next.Widowmaker)
+			heroesWDL["widowmaker"] = overwatch.MakeWDL(&emptyHeroStruct, next.Widowmaker)
 		}
 	}
 	if next.Winston != nil {
 		if prev.Winston != nil {
-			heroesWDL["winston"] = makeWDL(prev.Winston, next.Winston)
+			heroesWDL["winston"] = overwatch.MakeWDL(prev.Winston, next.Winston)
 		} else {
-			heroesWDL["winston"] = makeWDL(&emptyHeroStruct, next.Winston)
+			heroesWDL["winston"] = overwatch.MakeWDL(&emptyHeroStruct, next.Winston)
 		}
 	}
 	if next.Zarya != nil {
 		if prev.Zarya != nil {
-			heroesWDL["zarya"] = makeWDL(prev.Zarya, next.Zarya)
+			heroesWDL["zarya"] = overwatch.MakeWDL(prev.Zarya, next.Zarya)
 		} else {
-			heroesWDL["zarya"] = makeWDL(&emptyHeroStruct, next.Zarya)
+			heroesWDL["zarya"] = overwatch.MakeWDL(&emptyHeroStruct, next.Zarya)
 		}
 	}
 	if next.Zenyatta != nil {
 		if prev.Zenyatta != nil {
-			heroesWDL["zenyatta"] = makeWDL(prev.Zenyatta, next.Zenyatta)
+			heroesWDL["zenyatta"] = overwatch.MakeWDL(prev.Zenyatta, next.Zenyatta)
 		} else {
-			heroesWDL["zenyatta"] = makeWDL(&emptyHeroStruct, next.Zenyatta)
+			heroesWDL["zenyatta"] = overwatch.MakeWDL(&emptyHeroStruct, next.Zenyatta)
 		}
 	}
 
 	return heroesWDL
-}
-
-func makeWDL(prev *overwatch.HeroStruct, next *overwatch.HeroStruct) WDL {
-	return WDL{
-		Win:  int(next.GeneralStats.GamesWon - prev.GeneralStats.GamesWon),
-		Draw: int((next.GeneralStats.GamesPlayed - next.GeneralStats.GamesWon - next.GeneralStats.GamesLost) - (prev.GeneralStats.GamesPlayed - prev.GeneralStats.GamesWon - prev.GeneralStats.GamesLost)),
-		Loss: int(next.GeneralStats.GamesLost - prev.GeneralStats.GamesLost),
-	}
 }
 
 func startedPlaying(prev player.PlayerState, next player.PlayerState) bool {

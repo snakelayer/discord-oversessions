@@ -3,7 +3,6 @@ package owbot
 import (
 	"bytes"
 	"context"
-	"reflect"
 	"regexp"
 	"strings"
 	"text/template"
@@ -176,7 +175,7 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 	nextPlayerState.Game = presenceUpdate.Game
 
 	if startedPlaying(prevPlayerState, nextPlayerState) {
-		err := bot.setPlayerStatsAndHeroes(&nextPlayerState)
+		err := bot.setPlayerBlob(&nextPlayerState)
 		if err != nil {
 			return
 		}
@@ -198,7 +197,7 @@ func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState)
 
 		if bot.discord.IsOverwatch(playerState.Game) {
 			bot.logger.WithField("userId", userId).Debug("initializing player overwatch data")
-			bot.setPlayerStatsAndHeroes(&playerState)
+			bot.setPlayerBlob(&playerState)
 			playerStates[userId] = playerState
 		}
 	}
@@ -216,9 +215,9 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 	for i := 0; i < maxGetUserStatsAttempts; i++ {
 		bot.logger.WithField("attempt", i).Debug("retry")
 
-		bot.setPlayerStatsAndHeroes(next)
+		bot.setPlayerBlob(next)
 
-		if isStatsDifferent(prev.AllHeroStats, next.AllHeroStats) {
+		if !prev.RegionBlob.Equals(next.RegionBlob) {
 			bot.logger.Debug("successfully retrieved updated stats")
 			break
 		}
@@ -227,23 +226,23 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 	}
 
 	var messageContent string
-	if prev.UserStats == nil && next.UserStats == nil {
+	if prev.RegionBlob == nil && next.RegionBlob == nil {
 		bot.logger.Warn("no user stats found")
-	} else if prev.UserStats == nil && next.UserStats != nil {
+	} else if prev.RegionBlob == nil && next.RegionBlob != nil {
 		bot.logger.Warn("no previous user stats found")
 		messageContent = bot.getTemplateMessage(templateNoChangeMessage, next)
-	} else if prev.UserStats != nil && next.UserStats == nil {
+	} else if prev.RegionBlob != nil && next.RegionBlob == nil {
 		bot.logger.Warn("no next user stats found")
 		messageContent = bot.getTemplateMessage(templateNoChangeMessage, prev)
-	} else if isStatsDifferent(prev.AllHeroStats, next.AllHeroStats) {
+	} else if !prev.RegionBlob.Equals(next.RegionBlob) {
 		hours, minutes := getHoursMinutesFromDuration(next.Timestamp.Sub(prev.Timestamp))
 		playerSessionData := playerSessionData{
 			Username:  next.User.Username,
-			FinalSR:   next.UserStats.OverallStats.CompRank,
-			SRDiff:    next.UserStats.OverallStats.CompRank - prev.UserStats.OverallStats.CompRank,
+			FinalSR:   next.RegionBlob.GetCompRank(),
+			SRDiff:    next.RegionBlob.GetCompRank() - prev.RegionBlob.GetCompRank(),
 			Hours:     hours,
 			Minutes:   minutes,
-			HeroesWDL: bot.getHeroesWDL(prev.AllHeroStats, next.AllHeroStats),
+			HeroesWDL: bot.getHeroesWDL(prev.RegionBlob.GetAllHeroStats(), next.RegionBlob.GetAllHeroStats()),
 		}
 		messageContent = bot.getTemplateMessage(templateDiffMessage, playerSessionData)
 
@@ -258,16 +257,16 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 	}
 }
 
-func (bot *Bot) setPlayerStatsAndHeroes(playerState *player.PlayerState) error {
+func (bot *Bot) setPlayerBlob(playerState *player.PlayerState) error {
 	ctx, _ := context.WithTimeout(context.Background(), commandTimeout)
-	stats, heroes, err := bot.overwatch.GetStatsAndHeroes(ctx, playerState.BattleTag)
+
+	blob, err := bot.overwatch.GetUSPlayerBlob(ctx, playerState.BattleTag)
 	if err != nil {
-		bot.logger.WithError(err).Error("failed to get stats or hero data")
+		bot.logger.WithError(err).Error("failed to get player blob data")
 		return err
 	}
 
-	playerState.UserStats = stats
-	playerState.AllHeroStats = heroes
+	playerState.RegionBlob = blob
 
 	return nil
 }
@@ -467,14 +466,6 @@ func stoppedPlaying(prev player.PlayerState, next player.PlayerState) bool {
 	}
 
 	return false
-}
-
-func isStatsDifferent(prev *overwatch.AllHeroStats, next *overwatch.AllHeroStats) bool {
-	if reflect.DeepEqual(prev, next) {
-		return false
-	}
-
-	return true
 }
 
 func getHoursMinutesFromDuration(duration time.Duration) (int, int) {

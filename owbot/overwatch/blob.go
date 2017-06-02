@@ -2,6 +2,7 @@ package overwatch
 
 import (
 	"fmt"
+	"reflect"
 )
 
 // Top level response to a u/<battle-tag>/blob request
@@ -21,6 +22,18 @@ type RegionBlob struct {
 	Stats struct {
 		Competitive *UserStats `json:"competitive"`
 	} `json:"stats"`
+}
+
+func (regionBlob *RegionBlob) Equals(regionBlob2 *RegionBlob) bool {
+	return reflect.DeepEqual(regionBlob, regionBlob2)
+}
+
+func (regionBlob *RegionBlob) GetCompRank() int {
+	return regionBlob.Stats.Competitive.OverallStats.CompRank
+}
+
+func (regionBlob *RegionBlob) GetAllHeroStats() *AllHeroStats {
+	return regionBlob.Heroes.Stats.Competitive
 }
 
 type UserStats struct {

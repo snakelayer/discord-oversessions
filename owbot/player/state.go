@@ -18,9 +18,8 @@ type PlayerState struct {
 	User *discordgo.User
 	Game *discordgo.Game
 
-	BattleTag    string
-	UserStats    *overwatch.UserStats
-	AllHeroStats *overwatch.AllHeroStats
+	BattleTag  string
+	RegionBlob *overwatch.RegionBlob
 
 	Timestamp time.Time
 }
@@ -34,5 +33,5 @@ func (state PlayerState) RecentlyUpdated() bool {
 }
 
 func (state PlayerState) String() string {
-	return fmt.Sprintf("{User:%v Game:%v BattleTag:%v UserStats:%v AllHeroStats:%v Timestamp:%v}", state.User, state.Game, state.BattleTag, state.UserStats, state.AllHeroStats, state.Timestamp)
+	return fmt.Sprintf("{User:%v Game:%v BattleTag:%v Blob:%v Timestamp:%v}", state.User, state.Game, state.BattleTag, state.RegionBlob, state.Timestamp)
 }

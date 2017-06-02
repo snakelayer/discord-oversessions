@@ -3,7 +3,6 @@ package overwatch
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -128,7 +127,7 @@ func (ow *OverwatchClient) Do(req *http.Request, v interface{}) (*http.Response,
 	return resp, nil
 }
 
-func (ow *OverwatchClient) getUSPlayerBlob(ctx context.Context, battleTag string) (*RegionBlob, error) {
+func (ow *OverwatchClient) GetUSPlayerBlob(ctx context.Context, battleTag string) (*RegionBlob, error) {
 	// Url friendly battleTag
 	battleTag = strings.Replace(battleTag, "#", "-", -1)
 
@@ -156,18 +155,4 @@ func (ow *OverwatchClient) getUSPlayerBlob(ctx context.Context, battleTag string
 	}
 
 	return res.US, nil
-}
-
-func (ow *OverwatchClient) GetStatsAndHeroes(ctx context.Context, battleTag string) (*UserStats, *AllHeroStats, error) {
-	blob, err := ow.getUSPlayerBlob(ctx, battleTag)
-	if err != nil {
-		return nil, nil, errors.New("owapi blob request failed")
-	}
-
-	blobStats := blob.Stats.Competitive
-	blobStats.BattleTag = battleTag
-	blobStats.Region = "US"
-	blobHeroes := blob.Heroes.Stats.Competitive
-
-	return blobStats, blobHeroes, nil
 }

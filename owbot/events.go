@@ -57,7 +57,8 @@ type playerSessionData struct {
 	Hours   int
 	Minutes int
 
-	HeroesWDL map[string]overwatch.WDL
+	HeroesWDL    map[string]overwatch.WDL
+	QuickplayWDL overwatch.WDL
 }
 
 func (sessionData playerSessionData) WinString() string {
@@ -99,9 +100,10 @@ func (sessionData playerSessionData) LossString() string {
 var templateDiffMessage = template.Must(template.New("DiffMessage").Parse(strings.TrimSpace(`
 **{{ .Username }}**:
 length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
-wins: {{.WinString}}
-draws: {{.DrawString}}
-losses: {{.LossString}}
+quickplay: {{.QuickplayWDL.Win}} {{if (eq .QuickplayWDL.Win 1)}}win{{else}}wins{{end}}, {{.QuickplayWDL.Loss}} {{if (eq .QuickplayWDL.Loss 1)}}loss{{else}}losses{{end}}
+comp wins: {{.WinString}}
+comp draws: {{.DrawString}}
+comp losses: {{.LossString}}
 SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }})
 `)))
 
@@ -231,12 +233,13 @@ func (bot *Bot) generateSessionReport(prev *player.PlayerState, next *player.Pla
 	} else if !prev.RegionBlob.Equals(next.RegionBlob) {
 		hours, minutes := getHoursMinutesFromDuration(next.Timestamp.Sub(prev.Timestamp))
 		playerSessionData := playerSessionData{
-			Username:  next.User.Username,
-			FinalSR:   next.RegionBlob.GetCompRank(),
-			SRDiff:    next.RegionBlob.GetCompRank() - prev.RegionBlob.GetCompRank(),
-			Hours:     hours,
-			Minutes:   minutes,
-			HeroesWDL: bot.getHeroesWDL(prev.RegionBlob.GetAllHeroStats(), next.RegionBlob.GetAllHeroStats()),
+			Username:     next.User.Username,
+			FinalSR:      next.RegionBlob.GetCompRank(),
+			SRDiff:       next.RegionBlob.GetCompRank() - prev.RegionBlob.GetCompRank(),
+			Hours:        hours,
+			Minutes:      minutes,
+			HeroesWDL:    bot.getHeroesWDL(prev.RegionBlob.GetAllHeroStats(), next.RegionBlob.GetAllHeroStats()),
+			QuickplayWDL: overwatch.GetQuickplayWDLDiff(prev.RegionBlob, next.RegionBlob),
 		}
 		messageContent = bot.getTemplateMessage(templateDiffMessage, playerSessionData)
 

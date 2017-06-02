@@ -35,6 +35,7 @@ type RegionBlob struct {
 	} `json:"heroes"`
 	Stats struct {
 		Competitive *UserStats `json:"competitive"`
+		Quickplay   *UserStats `json:"quickplay"`
 	} `json:"stats"`
 }
 
@@ -50,10 +51,15 @@ func (regionBlob *RegionBlob) GetAllHeroStats() *AllHeroStats {
 	return regionBlob.Heroes.Stats.Competitive
 }
 
-type UserStats struct {
-	BattleTag string
-	Region    string
+func GetQuickplayWDLDiff(prev *RegionBlob, next *RegionBlob) WDL {
+	return WDL{
+		Win:  next.Stats.Quickplay.OverallStats.Wins - prev.Stats.Quickplay.OverallStats.Wins,
+		Draw: 0,
+		Loss: next.Stats.Quickplay.OverallStats.Losses - prev.Stats.Quickplay.OverallStats.Losses,
+	}
+}
 
+type UserStats struct {
 	OverallStats struct {
 		CompRank int     `json:"comprank"`
 		Games    int     `json:"games"`
@@ -77,7 +83,7 @@ type UserStats struct {
 }
 
 func (userStats UserStats) String() string {
-	return fmt.Sprintf("{BattleTag:%v OverallStats:%v}", userStats.BattleTag, userStats.OverallStats)
+	return fmt.Sprintf("{OverallStats:%v}", userStats.OverallStats)
 }
 
 type AllHeroStats struct {

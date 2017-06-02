@@ -356,6 +356,13 @@ func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHe
 			heroesWDL["orisa"] = makeWDL(&emptyHeroStruct, next.Orisa)
 		}
 	}
+	if next.Pharah != nil {
+		if prev.Pharah != nil {
+			heroesWDL["pharah"] = makeWDL(prev.Pharah, next.Pharah)
+		} else {
+			heroesWDL["pharah"] = makeWDL(&emptyHeroStruct, next.Pharah)
+		}
+	}
 	if next.Reaper != nil {
 		if prev.Reaper != nil {
 			heroesWDL["reaper"] = makeWDL(prev.Reaper, next.Reaper)

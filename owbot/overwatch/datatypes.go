@@ -48,6 +48,9 @@ func (regionBlob *RegionBlob) Equals(regionBlob2 *RegionBlob) bool {
 }
 
 func (regionBlob *RegionBlob) GetCompRank() int {
+	if regionBlob.Stats.Competitive == nil {
+		return 0
+	}
 	return regionBlob.Stats.Competitive.OverallStats.CompRank
 }
 

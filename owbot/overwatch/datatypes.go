@@ -11,6 +11,10 @@ type WDL struct {
 	Loss int
 }
 
+func (wdl WDL) IsEmpty() bool {
+	return wdl.Win == 0 && wdl.Draw == 0 && wdl.Loss == 0
+}
+
 func MakeWDL(prev *HeroStruct, next *HeroStruct) WDL {
 	return WDL{
 		Win:  int(next.GeneralStats.GamesWon - prev.GeneralStats.GamesWon),

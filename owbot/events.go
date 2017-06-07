@@ -97,10 +97,14 @@ func (sessionData playerSessionData) LossString() string {
 	return buffer.String()
 }
 
+func (sessionData playerSessionData) IsEmptyQuickplay() bool {
+	return sessionData.QuickplayWDL.IsEmpty()
+}
+
 var templateDiffMessage = template.Must(template.New("DiffMessage").Parse(strings.TrimSpace(`
 **{{ .Username }}**:
 length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
-quickplay: {{.QuickplayWDL.Win}} {{if (eq .QuickplayWDL.Win 1)}}win{{else}}wins{{end}}, {{.QuickplayWDL.Loss}} {{if (eq .QuickplayWDL.Loss 1)}}loss{{else}}losses{{end}}
+{{if not .IsEmptyQuickplay}}quickplay: {{.QuickplayWDL.Win}} {{if (eq .QuickplayWDL.Win 1)}}win{{else}}wins{{end}}, {{.QuickplayWDL.Loss}} {{if (eq .QuickplayWDL.Loss 1)}}loss{{else}}losses{{end}}{{end}}
 comp wins: {{.WinString}}
 comp draws: {{.DrawString}}
 comp losses: {{.LossString}}

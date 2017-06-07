@@ -137,7 +137,7 @@ func (sessionData playerSessionData) IsEmptyQuickplay() bool {
 
 var templateDiffMessage = template.Must(template.New("DiffMessage").Parse(strings.TrimSpace(`
 **{{ .Username }}**:
-length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
+session length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
 {{if not .IsEmptyQuickplay}}quickplay: {{.QuickplayWDL.Win}} {{if (eq .QuickplayWDL.Win 1)}}win{{else}}wins{{end}}, {{.QuickplayWDL.Loss}} {{if (eq .QuickplayWDL.Loss 1)}}loss{{else}}losses{{end}}{{end}}
 {{if .HasWins}}comp wins: {{.WinString}}{{end}}
 {{if .HasDraws}}comp draws: {{.DrawString}}{{end}}
@@ -207,6 +207,7 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 
 	var nextPlayerState = prevPlayerState
 	nextPlayerState.Game = presenceUpdate.Game
+	nextPlayerState.Timestamp = time.Now()
 
 	if startedPlaying(prevPlayerState, nextPlayerState) {
 		err := bot.setPlayerBlob(&nextPlayerState)
@@ -217,7 +218,6 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 		bot.generateSessionReport(&prevPlayerState, &nextPlayerState)
 	}
 
-	nextPlayerState.Timestamp = time.Now()
 	bot.playerStates[userId] = nextPlayerState
 	bot.logger.WithField("prev", prevPlayerState).WithField("next", nextPlayerState).Debug("player state transition")
 }

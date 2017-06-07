@@ -25,11 +25,7 @@ type PlayerState struct {
 }
 
 func (state PlayerState) RecentlyUpdated() bool {
-	if time.Since(state.Timestamp) < recentDuration {
-		return true
-	}
-
-	return false
+	return time.Since(state.Timestamp) < recentDuration
 }
 
 func (state PlayerState) String() string {

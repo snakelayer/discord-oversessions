@@ -61,6 +61,20 @@ type playerSessionData struct {
 	QuickplayWDL overwatch.WDL
 }
 
+func (sessionData playerSessionData) HasSRChange() bool {
+	return sessionData.SRDiff != 0
+}
+
+func (sessionData playerSessionData) HasWins() bool {
+	for _, wdl := range sessionData.HeroesWDL {
+		if wdl.Win != 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (sessionData playerSessionData) WinString() string {
 	var buffer bytes.Buffer
 
@@ -73,6 +87,16 @@ func (sessionData playerSessionData) WinString() string {
 	return buffer.String()
 }
 
+func (sessionData playerSessionData) HasDraws() bool {
+	for _, wdl := range sessionData.HeroesWDL {
+		if wdl.Draw != 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (sessionData playerSessionData) DrawString() string {
 	var buffer bytes.Buffer
 
@@ -83,6 +107,16 @@ func (sessionData playerSessionData) DrawString() string {
 	}
 
 	return buffer.String()
+}
+
+func (sessionData playerSessionData) HasLosses() bool {
+	for _, wdl := range sessionData.HeroesWDL {
+		if wdl.Loss != 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (sessionData playerSessionData) LossString() string {
@@ -105,10 +139,10 @@ var templateDiffMessage = template.Must(template.New("DiffMessage").Parse(string
 **{{ .Username }}**:
 length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
 {{if not .IsEmptyQuickplay}}quickplay: {{.QuickplayWDL.Win}} {{if (eq .QuickplayWDL.Win 1)}}win{{else}}wins{{end}}, {{.QuickplayWDL.Loss}} {{if (eq .QuickplayWDL.Loss 1)}}loss{{else}}losses{{end}}{{end}}
-comp wins: {{.WinString}}
-comp draws: {{.DrawString}}
-comp losses: {{.LossString}}
-SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }})
+{{if .HasWins}}comp wins: {{.WinString}}{{end}}
+{{if .HasDraws}}comp draws: {{.DrawString}}{{end}}
+{{if .HasLosses}}comp losses: {{.LossString}}{{end}}
+{{if .HasSRChange}}SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }}){{end}}
 `)))
 
 var templateNoChangeMessage = template.Must(template.New("NoChangeMessage").Parse(strings.TrimSpace(`

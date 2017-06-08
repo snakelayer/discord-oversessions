@@ -146,11 +146,7 @@ session length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
 `)))
 
 var templateNoChangeMessage = template.Must(template.New("NoChangeMessage").Parse(strings.TrimSpace(`
-**{{ .User.Username }}**: SR {{ .UserStats.OverallStats.CompRank }}
-`)))
-
-var templateErrorMessage = template.Must(template.New("ErrorMessage").Parse(strings.TrimSpace(`
-**{{ .User.Username }}**: *(error retrieving data)*
+**{{ .User.Username }}**: SR {{ .RegionBlob.GetCompRank }}
 `)))
 
 // A BattleTag is 3-12 characters, followed by "#", followed by digits

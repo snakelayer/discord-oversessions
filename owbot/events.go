@@ -309,6 +309,10 @@ func (bot *Bot) setPlayerBlob(playerState *player.PlayerState) error {
 func (bot *Bot) getHeroesWDL(prev *overwatch.AllHeroStats, next *overwatch.AllHeroStats) map[string]overwatch.WDL {
 	heroesWDL := make(map[string]overwatch.WDL)
 
+	if next == nil {
+		return heroesWDL
+	}
+
 	emptyHeroStruct := overwatch.HeroStruct{}
 	emptyHeroStruct.GeneralStats.GamesLost = 0
 	emptyHeroStruct.GeneralStats.GamesPlayed = 0

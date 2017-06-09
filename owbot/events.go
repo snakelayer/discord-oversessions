@@ -137,12 +137,12 @@ func (sessionData playerSessionData) IsEmptyQuickplay() bool {
 
 var templateDiffMessage = template.Must(template.New("DiffMessage").Parse(strings.TrimSpace(`
 **{{ .Username }}**:
-session length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min
-{{if not .IsEmptyQuickplay}}quickplay: {{.QuickplayWDL.Win}} {{if (eq .QuickplayWDL.Win 1)}}win{{else}}wins{{end}}, {{.QuickplayWDL.Loss}} {{if (eq .QuickplayWDL.Loss 1)}}loss{{else}}losses{{end}}{{end}}
-{{if .HasWins}}comp wins: {{.WinString}}{{end}}
-{{if .HasDraws}}comp draws: {{.DrawString}}{{end}}
-{{if .HasLosses}}comp losses: {{.LossString}}{{end}}
-{{if .HasSRChange}}SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }}){{end}}
+session length: {{if (gt .Hours 0)}}{{ .Hours }} hrs {{end}}{{ .Minutes }} min{{if not .IsEmptyQuickplay}}
+quickplay: {{.QuickplayWDL.Win}} {{if (eq .QuickplayWDL.Win 1)}}win{{else}}wins{{end}}, {{.QuickplayWDL.Loss}} {{if (eq .QuickplayWDL.Loss 1)}}loss{{else}}losses{{end}}{{end}}{{if .HasWins}}
+comp wins: {{.WinString}}{{end}}{{if .HasDraws}}
+comp draws: {{.DrawString}}{{end}}{{if .HasLosses}}
+comp losses: {{.LossString}}{{end}}{{if .HasSRChange}}
+SR: {{ .FinalSR }} ({{if (ge .SRDiff 0)}}+{{end}}{{ .SRDiff }}){{end}}
 `)))
 
 var templateNoChangeMessage = template.Must(template.New("NoChangeMessage").Parse(strings.TrimSpace(`

@@ -149,15 +149,11 @@ func (discordAdapter *DiscordAdapter) ReadMessage(messageId string) (m *discordg
 }
 
 func (discordAdapter *DiscordAdapter) IsOverwatch(game *discordgo.Game) bool {
-	if game == nil {
-		return false
-	}
+	return game != nil && game.Name == "Overwatch"
+}
 
-	if game.Name == "Overwatch" {
-		return true
-	}
-
-	return false
+func (discordAdapter *DiscordAdapter) IsStreaming(game *discordgo.Game) bool {
+	return game != nil && game.Type == 1
 }
 
 func (discordAdapter *DiscordAdapter) Close() {

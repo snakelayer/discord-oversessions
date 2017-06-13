@@ -17,7 +17,8 @@ import (
 
 const (
 	// Longest amount of time a command is processed until given up on
-	commandTimeout = 10 * time.Second
+	commandTimeout     = 10 * time.Second
+	longCommandTimeout = 30 * time.Second
 
 	maxGetUserStatsAttempts = 10
 )
@@ -257,7 +258,7 @@ func (bot *Bot) linkPlayerBattleTag(user *discordgo.User, battleTag string) {
 		return
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), commandTimeout)
+	ctx, _ := context.WithTimeout(context.Background(), longCommandTimeout)
 	_, err := bot.overwatch.GetUSPlayerBlob(ctx, battleTag)
 	if err != nil {
 		bot.logger.WithError(err).Info("invalid overwatch account")

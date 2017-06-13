@@ -5,6 +5,7 @@ import (
 	"context"
 	"regexp"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -233,6 +234,8 @@ func (bot *Bot) messageCreate(session *discordgo.Session, messageCreate *discord
 		return
 	}
 
+	// TODO: these only update the in-memory links
+	// ideally, the change should also be persisted to the input battleTag map file
 	input := strings.SplitN(messageCreate.Content, " ", 2)
 	if input[0] == "!link" && len(input) == 2 {
 		bot.linkPlayerBattleTag(messageCreate.Author, input[1])
@@ -273,15 +276,10 @@ func (bot *Bot) linkPlayerBattleTag(user *discordgo.User, battleTag string) {
 		} else {
 			bot.logger.Info("replacing existing link")
 
-			// TODO remove existing
+			delete(bot.playerStates, user.ID)
+
 			messageContent = user.Username + "'s existing link to " + playerState.BattleTag + " is updated to " + battleTag
 			bot.discord.CreateMessage(messageContent)
-
-			playerState.UpdateMutex.Lock()
-			defer playerState.UpdateMutex.Unlock()
-			playerState.User = user
-			playerState.BattleTag = battleTag
-			playerState.RegionBlob = nil
 		}
 	} else {
 		bot.logger.Info("adding new link")
@@ -290,11 +288,22 @@ func (bot *Bot) linkPlayerBattleTag(user *discordgo.User, battleTag string) {
 		bot.discord.CreateMessage(messageContent)
 	}
 
-	// TODO add player
+	playerState := player.PlayerState{
+		BattleTag:   battleTag,
+		Timestamp:   time.Now(),
+		UpdateMutex: new(sync.Mutex)}
+	bot.playerStates[user.ID] = playerState
+	bot.logger.WithField("userId", user.ID).WithField("battleTag", battleTag).Debug("added player link")
 }
 
 func (bot *Bot) unlinkPlayerBattleTag(user *discordgo.User) {
 	bot.logger.WithField("user", user).Info("unlink request")
+
+	battleTag := bot.playerStates[user.ID].BattleTag
+	delete(bot.playerStates, user.ID)
+
+	messageContent := user.Username + " unlinked from " + battleTag
+	bot.discord.CreateMessage(messageContent)
 }
 
 func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState) {

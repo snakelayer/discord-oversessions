@@ -83,6 +83,10 @@ func (discordAdapter *DiscordAdapter) SetOwnUserId() error {
 	return nil
 }
 
+func (discordAdapter *DiscordAdapter) GetOwnUserId() string {
+	return discordAdapter.ownUserId
+}
+
 func (discordAdapter *DiscordAdapter) SetUser(userId string, playerState *player.PlayerState) error {
 	user, err := discordAdapter.session.User(userId)
 	if err != nil {

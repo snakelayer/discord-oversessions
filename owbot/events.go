@@ -228,7 +228,10 @@ func (bot *Bot) messageCreate(session *discordgo.Session, messageCreate *discord
 	if bot.discord.GetOverwatchChannelId() != messageCreate.ChannelID {
 		return
 	}
-	// TODO ignore self
+	if messageCreate.Author.ID == bot.discord.GetOwnUserId() {
+		bot.logger.Info("ignoring own message")
+		return
+	}
 
 	input := strings.SplitN(messageCreate.Content, " ", 2)
 	if input[0] == "!link" && len(input) == 2 {

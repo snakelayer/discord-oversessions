@@ -13,10 +13,12 @@ import (
 var regexOverwatchChannel = regexp.MustCompile(`^over.*$`)
 
 type DiscordAdapter struct {
-	session *discordgo.Session
-	guild   *discordgo.UserGuild
-	channel *discordgo.Channel
-	logger  *logrus.Entry
+	session   *discordgo.Session
+	guild     *discordgo.UserGuild
+	channel   *discordgo.Channel
+	ownUserId string
+
+	logger *logrus.Entry
 }
 
 func New(logger *logrus.Logger, token string) (*DiscordAdapter, error) {
@@ -67,6 +69,18 @@ func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]pl
 
 		playerStates[userId] = playerState
 	}
+}
+
+func (discordAdapter *DiscordAdapter) SetOwnUserId() error {
+	user, err := discordAdapter.session.User("@me")
+	if err != nil {
+		discordAdapter.logger.WithError(err).Error("could not get own user info")
+		return err
+	}
+
+	discordAdapter.logger.WithField("ownUserId", user.ID).Info("my userId")
+	discordAdapter.ownUserId = user.ID
+	return nil
 }
 
 func (discordAdapter *DiscordAdapter) SetUser(userId string, playerState *player.PlayerState) error {

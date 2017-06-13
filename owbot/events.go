@@ -170,6 +170,7 @@ func (bot *Bot) readyHandler(session *discordgo.Session, ready *discordgo.Ready)
 	//session.UpdateStatus(0, "!help")
 
 	bot.discord.SetGuildAndOverwatchChannel()
+	bot.discord.SetOwnUserId()
 	bot.discord.SetPlayerStates(bot.playerStates)
 	bot.setActivePlayerStats(bot.playerStates)
 	//msg, _ := bot.discord.ReadMessage("303409836215762944")

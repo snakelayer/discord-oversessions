@@ -24,6 +24,7 @@ func (bot *Bot) Start() error {
 
 	bot.discord.AddHandler(bot.readyHandler)
 	bot.discord.AddHandler(bot.presenceUpdate)
+	bot.discord.AddHandler(bot.messageCreate)
 
 	bot.logger.Info("Bot starting, connecting...")
 	if err := bot.discord.Connect(); err != nil {

@@ -48,7 +48,10 @@ func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]pl
 	for _, presence := range guild.Presences {
 		userId := presence.User.ID
 
-		playerState := playerStates[userId]
+		playerState, ok := playerStates[userId]
+		if !ok {
+			continue
+		}
 		if discordAdapter.SetUser(userId, &playerState) != nil {
 			continue
 		}
@@ -114,6 +117,10 @@ func (discordAdapter *DiscordAdapter) SetGuildAndOverwatchChannel() {
 	if discordAdapter.channel == nil {
 		discordAdapter.logger.Error("no text channel found")
 	}
+}
+
+func (discordAdapter *DiscordAdapter) GetOverwatchChannelId() string {
+	return discordAdapter.channel.ID
 }
 
 func (discordAdapter *DiscordAdapter) CreateMessage(content string) (m *discordgo.Message, err error) {

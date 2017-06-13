@@ -222,6 +222,77 @@ func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *disco
 	bot.logger.WithField("prev", prevPlayerState).WithField("next", nextPlayerState).Debug("player state transition")
 }
 
+func (bot *Bot) messageCreate(session *discordgo.Session, messageCreate *discordgo.MessageCreate) {
+	bot.logger.WithField("messageId", messageCreate.ID).WithField("messageChannelId", messageCreate.ChannelID).WithField("messageContent", messageCreate.Content).WithField("messageAuthor", messageCreate.Author).Debug("start handling messageCreate")
+	if bot.discord.GetOverwatchChannelId() != messageCreate.ChannelID {
+		return
+	}
+	// TODO ignore self
+
+	input := strings.SplitN(messageCreate.Content, " ", 2)
+	if input[0] == "!link" && len(input) == 2 {
+		bot.linkPlayerBattleTag(messageCreate.Author, input[1])
+	} else if input[0] == "!unlink" {
+		bot.unlinkPlayerBattleTag(messageCreate.Author)
+	}
+}
+
+func (bot *Bot) linkPlayerBattleTag(user *discordgo.User, battleTag string) {
+	bot.logger.WithField("user", user).WithField("battleTag", battleTag).Info("link request")
+
+	var messageContent string
+
+	if !regexBattleTag.MatchString(battleTag) {
+		bot.logger.Info("invalid battleTag format")
+
+		messageContent = battleTag + " is not a valid battleTag"
+		bot.discord.CreateMessage(messageContent)
+		return
+	}
+
+	ctx, _ := context.WithTimeout(context.Background(), commandTimeout)
+	_, err := bot.overwatch.GetUSPlayerBlob(ctx, battleTag)
+	if err != nil {
+		bot.logger.WithError(err).Info("invalid overwatch account")
+
+		messageContent = battleTag + " is not a valid Overwatch account"
+		bot.discord.CreateMessage(messageContent)
+		return
+	}
+
+	if playerState, ok := bot.playerStates[user.ID]; ok {
+		if battleTag == playerState.BattleTag {
+			bot.logger.Info("same link")
+
+			messageContent = user.Username + " is already linked to " + battleTag
+			bot.discord.CreateMessage(messageContent)
+		} else {
+			bot.logger.Info("replacing existing link")
+
+			// TODO remove existing
+			messageContent = user.Username + "'s existing link to " + playerState.BattleTag + " is updated to " + battleTag
+			bot.discord.CreateMessage(messageContent)
+
+			playerState.UpdateMutex.Lock()
+			defer playerState.UpdateMutex.Unlock()
+			playerState.User = user
+			playerState.BattleTag = battleTag
+			playerState.RegionBlob = nil
+		}
+	} else {
+		bot.logger.Info("adding new link")
+
+		messageContent = user.Username + " is now linked to " + battleTag
+		bot.discord.CreateMessage(messageContent)
+	}
+
+	// TODO add player
+}
+
+func (bot *Bot) unlinkPlayerBattleTag(user *discordgo.User) {
+	bot.logger.WithField("user", user).Info("unlink request")
+}
+
 func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState) {
 	for userId, playerState := range playerStates {
 		if playerState.BattleTag == "" {

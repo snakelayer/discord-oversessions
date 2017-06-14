@@ -24,6 +24,13 @@ type PlayerState struct {
 	Timestamp time.Time
 }
 
+func New(battleTag string) PlayerState {
+	return PlayerState{
+		BattleTag:   battleTag,
+		Timestamp:   time.Now(),
+		UpdateMutex: new(sync.Mutex)}
+}
+
 func (state PlayerState) RecentlyUpdated() bool {
 	return time.Since(state.Timestamp) < recentDuration
 }

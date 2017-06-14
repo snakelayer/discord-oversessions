@@ -5,7 +5,6 @@ import (
 	"context"
 	"regexp"
 	"strings"
-	"sync"
 	"text/template"
 	"time"
 
@@ -289,10 +288,7 @@ func (bot *Bot) linkPlayerBattleTag(user *discordgo.User, battleTag string) {
 		bot.discord.CreateMessage(messageContent)
 	}
 
-	playerState := player.PlayerState{
-		BattleTag:   battleTag,
-		Timestamp:   time.Now(),
-		UpdateMutex: new(sync.Mutex)}
+	playerState := player.New(battleTag)
 	bot.playerStates[user.ID] = playerState
 	bot.logger.WithField("userId", user.ID).WithField("battleTag", battleTag).Debug("added player link")
 }

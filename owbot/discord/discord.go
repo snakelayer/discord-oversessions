@@ -100,7 +100,7 @@ func (discordAdapter *DiscordAdapter) SetUser(userId string, playerState *player
 }
 
 func (discordAdapter *DiscordAdapter) SetGuildAndOverwatchChannel() {
-	guilds, err := discordAdapter.session.UserGuilds()
+	guilds, err := discordAdapter.session.UserGuilds(1, "", "")
 	if err != nil {
 		return
 	}

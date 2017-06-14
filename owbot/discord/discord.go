@@ -41,6 +41,19 @@ func (discordAdapter *DiscordAdapter) AddHandler(handler interface{}) {
 	discordAdapter.session.AddHandler(handler)
 }
 
+func (discordAdapter *DiscordAdapter) SetPlayerState(userId string, playerState *player.PlayerState) {
+	presence, err := discordAdapter.session.State.Presence(discordAdapter.guild.ID, userId)
+	if err != nil {
+		discordAdapter.logger.WithError(err).Error("could not get player presence")
+		return
+	}
+
+	if discordAdapter.IsOverwatch(presence.Game) {
+		playerState.Timestamp = time.Now()
+		playerState.Game = presence.Game
+	}
+}
+
 func (discordAdapter *DiscordAdapter) SetPlayerStates(playerStates map[string]player.PlayerState) {
 	guild, err := discordAdapter.session.Guild(discordAdapter.guild.ID)
 	if err != nil {

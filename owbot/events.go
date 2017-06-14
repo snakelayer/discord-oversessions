@@ -173,7 +173,7 @@ func (bot *Bot) readyHandler(session *discordgo.Session, ready *discordgo.Ready)
 	bot.discord.SetGuildAndOverwatchChannel()
 	bot.discord.SetOwnUserId()
 	bot.discord.SetPlayerStates(bot.playerStates)
-	bot.setActivePlayerStats(bot.playerStates)
+	bot.setOverwatchStats()
 	//msg, _ := bot.discord.ReadMessage("303409836215762944")
 	//bot.logger.WithField("msg contents", msg.Content).Debug("emoji check")
 }
@@ -289,7 +289,10 @@ func (bot *Bot) linkPlayerBattleTag(user *discordgo.User, battleTag string) {
 	}
 
 	playerState := player.New(battleTag)
+	bot.discord.SetUser(user.ID, &playerState)
+	bot.discord.SetPlayerState(user.ID, &playerState)
 	bot.playerStates[user.ID] = playerState
+	bot.setPlayerOverwatchStats(user.ID)
 	bot.logger.WithField("userId", user.ID).WithField("battleTag", battleTag).Debug("added player link")
 }
 
@@ -303,18 +306,27 @@ func (bot *Bot) unlinkPlayerBattleTag(user *discordgo.User) {
 	bot.discord.CreateMessage(messageContent)
 }
 
-func (bot *Bot) setActivePlayerStats(playerStates map[string]player.PlayerState) {
-	for userId, playerState := range playerStates {
+func (bot *Bot) setOverwatchStats() {
+	for userId, playerState := range bot.playerStates {
 		if playerState.BattleTag == "" {
 			bot.logger.WithField("userId", userId).Warn("can't get player stats without a battleTag")
 			continue
 		}
 
-		if bot.discord.IsOverwatch(playerState.Game) {
-			bot.logger.WithField("userId", userId).Debug("initializing player overwatch data")
-			bot.setPlayerBlob(&playerState)
-			playerStates[userId] = playerState
-		}
+		bot.setPlayerOverwatchStats(userId)
+	}
+}
+
+func (bot *Bot) setPlayerOverwatchStats(userId string) {
+	playerState, ok := bot.playerStates[userId]
+	if !ok {
+		return
+	}
+
+	if bot.discord.IsOverwatch(playerState.Game) {
+		bot.logger.WithField("userId", userId).Debug("initializing player overwatch stats")
+		bot.setPlayerBlob(&playerState)
+		bot.playerStates[userId] = playerState
 	}
 }
 

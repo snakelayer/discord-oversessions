@@ -179,7 +179,7 @@ func (bot *Bot) readyHandler(session *discordgo.Session, ready *discordgo.Ready)
 }
 
 func (bot *Bot) presenceUpdate(session *discordgo.Session, presenceUpdate *discordgo.PresenceUpdate) {
-	bot.logger.WithField("presenceUpdate", presenceUpdate).Debug("start handling presenceUpdate")
+	bot.logger.WithField("presenceUpdate", presenceUpdate).WithField("userId", presenceUpdate.User.ID).WithField("game", presenceUpdate.Game).Debug("start handling presenceUpdate")
 	if bot.discord.IsStreaming(presenceUpdate.Game) {
 		bot.logger.Info("ignoring streaming update")
 		return

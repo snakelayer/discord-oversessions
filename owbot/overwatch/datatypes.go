@@ -25,8 +25,6 @@ func MakeWDL(prev *HeroStruct, next *HeroStruct) WDL {
 
 // Top level response to a u/<battle-tag>/blob request
 type BlobResponse struct {
-	KR *RegionBlob `json:"kr"`
-	EU *RegionBlob `json:"eu"`
 	US *RegionBlob `json:"us"`
 }
 
@@ -41,6 +39,10 @@ type RegionBlob struct {
 		Competitive *UserStats `json:"competitive"`
 		Quickplay   *UserStats `json:"quickplay"`
 	} `json:"stats"`
+}
+
+func (regionBlob RegionBlob) String() string {
+	return fmt.Sprintf("{Heroes:%v Comp:%v Quickplay:%v}", regionBlob.Heroes.Stats.Competitive, regionBlob.Stats.Competitive.OverallStats, regionBlob.Stats.Quickplay.OverallStats)
 }
 
 func (regionBlob *RegionBlob) Equals(regionBlob2 *RegionBlob) bool {
@@ -118,6 +120,34 @@ type AllHeroStats struct {
 	Winston    *HeroStruct `json:"winston"`
 	Zarya      *HeroStruct `json:"zarya"`
 	Zenyatta   *HeroStruct `json:"zenyatta"`
+}
+
+func (allHeroStats AllHeroStats) String() string {
+	return fmt.Sprintf("{Ana:%v Bastion:%v Dva:%v Genji:%v Hanzo:%v Junkrat:%v Lucio:%v Mccree:%v Mei:%v Mercy:%v Orisa:%v Pharah:%v Reaper:%v Reinhardt:%v Roadhog:%v Soldier76:%v Sombra:%v Symmetra:%v Torbjorn:%v Tracer:%v Widowmaker:%v Winston:%v Zarya:%v Zenyatta:%v }",
+		allHeroStats.Ana,
+		allHeroStats.Bastion,
+		allHeroStats.Dva,
+		allHeroStats.Genji,
+		allHeroStats.Hanzo,
+		allHeroStats.Junkrat,
+		allHeroStats.Lucio,
+		allHeroStats.Mccree,
+		allHeroStats.Mei,
+		allHeroStats.Mercy,
+		allHeroStats.Orisa,
+		allHeroStats.Pharah,
+		allHeroStats.Reaper,
+		allHeroStats.Reinhardt,
+		allHeroStats.Roadhog,
+		allHeroStats.Soldier76,
+		allHeroStats.Sombra,
+		allHeroStats.Symmetra,
+		allHeroStats.Torbjorn,
+		allHeroStats.Tracer,
+		allHeroStats.Widowmaker,
+		allHeroStats.Winston,
+		allHeroStats.Zarya,
+		allHeroStats.Zenyatta)
 }
 
 type HeroStruct struct {

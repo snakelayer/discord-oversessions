@@ -130,7 +130,7 @@ func (discordAdapter *DiscordAdapter) SetGuildAndOverwatchChannel() {
 
 	for _, channel := range channels {
 		discordAdapter.logger.WithField("channel", channel).Debug("channel data")
-		if channel.Type == "voice" {
+		if channel.Type == 2 {
 			continue
 		}
 
